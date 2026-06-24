@@ -1,50 +1,40 @@
-# Welcome to your Expo app 👋
+# 🎨 Artistic Vicky Mobile App
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+A beautiful mobile companion to [Artistic Vicky](https://artisticvickey.in/) — bringing art and creativity to your pocket.
 
-## Get started
+## What's Inside?
 
-1. Install dependencies
+- 📱 Native mobile experience powered by React Native & Expo
+- 🎭 Browse artistic creations and portfolio pieces
+- ⚡ Fast, responsive, and lightweight
+- 💯 Built with TypeScript for reliability
 
-   ```bash
-   npm install
-   ```
-
-2. Start the app
-
-   ```bash
-   npx expo start
-   ```
-
-In the output, you'll find options to open the app in a
-
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
-
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
+## Quick Start
 
 ```bash
-npm run reset-project
+# Install dependencies
+npm install
+
+# Start developing
+npx expo start
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+Choose your platform:
+- 📲 **Expo Go** - Test instantly on your phone
+- 🤖 **Android Emulator** - Full Android testing
+- 🍎 **iOS Simulator** - Full iOS testing
 
-## Learn more
+## Development
 
-To learn more about developing your project with Expo, look at the following resources:
+This project uses file-based routing. Edit files in the **app** directory to start building.
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+Want a fresh start? Run `npm run reset-project` to clear the example code.
 
-## Join the community
+## Learn More
 
-Join our community of developers creating universal apps.
+- [Expo Docs](https://docs.expo.dev/) - Framework guide
+- [React Native](https://reactnative.dev/) - Core concepts
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+---
+
+**Creating art, one line of code at a time** ✨
