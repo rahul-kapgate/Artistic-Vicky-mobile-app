@@ -1,3 +1,4 @@
+import QueryProvider from "@/providers/QueryProvider";
 import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { StyleSheet, View } from "react-native";
@@ -6,22 +7,24 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 
 export default function RootLayout() {
   return (
-    <GestureHandlerRootView style={styles.flex}>
-      <SafeAreaProvider>
-        <View style={styles.flex}>
-          <StatusBar style="light" />
-          <Stack
-            screenOptions={{
-              headerShown: false,
-              animation: "fade",
-              contentStyle: {
-                backgroundColor: "#0B0B0B",
-              },
-            }}
-          />
-        </View>
-      </SafeAreaProvider>
-    </GestureHandlerRootView>
+    <QueryProvider>
+      <GestureHandlerRootView style={styles.flex}>
+        <SafeAreaProvider>
+          <View style={styles.flex}>
+            <StatusBar style="light" />
+            <Stack
+              screenOptions={{
+                headerShown: false,
+                animation: "fade",
+                contentStyle: {
+                  backgroundColor: "#0B0B0B",
+                },
+              }}
+            />
+          </View>
+        </SafeAreaProvider>
+      </GestureHandlerRootView>
+    </QueryProvider>
   );
 }
 
