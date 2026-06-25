@@ -1,3 +1,4 @@
+import { useAuthStore } from "@/store/authStore"; // update the path
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
@@ -17,6 +18,8 @@ import { SafeAreaView } from "react-native-safe-area-context";
 const { width } = Dimensions.get("window");
 
 export default function LandingScreen() {
+  const { isAuthenticated } = useAuthStore();
+
   const router = useRouter();
   return (
     <SafeAreaView style={styles.safeArea} edges={["top", "bottom"]}>
@@ -58,28 +61,47 @@ export default function LandingScreen() {
 
             {/* Buttons */}
             <View style={styles.buttonRow}>
-              <LinearGradient
-                colors={["#FF3FA7", "#A855F7", "#33D6FF"]}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 0 }}
-                style={styles.primaryGradient}
-              >
-                <TouchableOpacity
-                  activeOpacity={0.85}
-                  style={styles.primaryButton}
-                  onPress={() => router.push("/(auth)/signup")}
+              {isAuthenticated ? (
+                <LinearGradient
+                  colors={["#FF3FA7", "#A855F7", "#33D6FF"]}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 0 }}
+                  style={styles.primaryGradient}
                 >
-                  <Text style={styles.primaryButtonText}>Sign Up</Text>
-                </TouchableOpacity>
-              </LinearGradient>
+                  <TouchableOpacity
+                    activeOpacity={0.85}
+                    style={styles.primaryButton}
+                    onPress={() => router.replace("/(app)/home")}
+                  >
+                    <Text style={styles.primaryButtonText}>Go to Home</Text>
+                  </TouchableOpacity>
+                </LinearGradient>
+              ) : (
+                <>
+                  <LinearGradient
+                    colors={["#FF3FA7", "#A855F7", "#33D6FF"]}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 0 }}
+                    style={styles.primaryGradient}
+                  >
+                    <TouchableOpacity
+                      activeOpacity={0.85}
+                      style={styles.primaryButton}
+                      onPress={() => router.push("/(auth)/signup")}
+                    >
+                      <Text style={styles.primaryButtonText}>Sign Up</Text>
+                    </TouchableOpacity>
+                  </LinearGradient>
 
-              <TouchableOpacity
-                activeOpacity={0.85}
-                style={styles.secondaryButton}
-                onPress={() => router.push("/(auth)/login")}
-              >
-                <Text style={styles.secondaryButtonText}>Login →</Text>
-              </TouchableOpacity>
+                  <TouchableOpacity
+                    activeOpacity={0.85}
+                    style={styles.secondaryButton}
+                    onPress={() => router.push("/(auth)/login")}
+                  >
+                    <Text style={styles.secondaryButtonText}>Login →</Text>
+                  </TouchableOpacity>
+                </>
+              )}
             </View>
 
             {/* Bottom Tagline */}
