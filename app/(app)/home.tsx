@@ -1,8 +1,6 @@
-import {
-  Course,
-  getEnrolledCourses,
-  getProfile,
-} from "@/services/user.service";
+import { getAllCourses } from "@/services/course.service";
+import { getEnrolledCourses, getProfile } from "@/services/user.service";
+import { Course } from "@/types/course";
 import { useQuery } from "@tanstack/react-query";
 import { useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
@@ -36,6 +34,17 @@ export default function HomeScreen() {
     queryFn: () => getEnrolledCourses(profile!.id),
     enabled: !!profile?.id,
   });
+
+  const { data: allCourses = [] } = useQuery({
+    queryKey: ["all-courses"],
+    queryFn: getAllCourses,
+    enabled: courses.length === 0,
+  });
+
+  const displayCourses = courses.length > 0 ? courses : allCourses;
+
+  const sectionTitle =
+    courses.length > 0 ? "My Courses" : "Recommended Courses";
 
   if (profileLoading) {
     return (
@@ -79,16 +88,14 @@ export default function HomeScreen() {
           </TouchableOpacity>
         </View>
 
-        <Text style={styles.sectionTitle}>My Courses</Text>
+        <Text style={styles.sectionTitle}>{sectionTitle}</Text>
 
         {coursesLoading ? (
           <ActivityIndicator color="#4CC3FF" />
-        ) : courses.length === 0 ? (
-          <Text style={styles.emptyText}>
-            You haven't enrolled in any courses yet.
-          </Text>
+        ) : displayCourses.length === 0 ? (
+          <Text style={styles.emptyText}>No courses available.</Text>
         ) : (
-          courses.map((course: Course) => (
+          displayCourses.map((course: Course) => (
             <TouchableOpacity
               key={course.id}
               style={styles.courseCard}
@@ -119,6 +126,7 @@ export default function HomeScreen() {
 
                 <View style={styles.bottomRow}>
                   <Text style={styles.rating}>⭐ {course.rating}</Text>
+
                   <Text style={styles.price}>₹{course.price}</Text>
                 </View>
               </View>

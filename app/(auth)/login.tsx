@@ -1,4 +1,5 @@
 import { loginUser } from "@/services/auth.service";
+import { Ionicons } from "@expo/vector-icons";
 import { useMutation } from "@tanstack/react-query";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
@@ -25,6 +26,8 @@ export default function LoginScreen() {
   const [password, setPassword] = useState("");
 
   const setUser = useAuthStore((state) => state.setUser);
+
+  const [showPassword, setShowPassword] = useState(false);
 
   const loginMutation = useMutation({
     mutationFn: () => loginUser(email, password),
@@ -83,16 +86,29 @@ export default function LoginScreen() {
             />
 
             <Text style={styles.label}>Password</Text>
-            <TextInput
-              value={password}
-              onChangeText={setPassword}
-              placeholder="Enter your password"
-              placeholderTextColor="#8A93B8"
-              secureTextEntry
-              autoCapitalize="none"
-              autoCorrect={false}
-              style={styles.input}
-            />
+            <View style={styles.passwordContainer}>
+              <TextInput
+                value={password}
+                onChangeText={setPassword}
+                placeholder="Enter your password"
+                placeholderTextColor="#8A93B8"
+                secureTextEntry={!showPassword}
+                autoCapitalize="none"
+                autoCorrect={false}
+                style={styles.passwordInput}
+              />
+
+              <TouchableOpacity
+                onPress={() => setShowPassword(!showPassword)}
+                style={styles.eyeButton}
+              >
+                <Ionicons
+                  name={showPassword ? "eye-outline" : "eye-off-outline"}
+                  size={22}
+                  color="#8A93B8"
+                />
+              </TouchableOpacity>
+            </View>
 
             <TouchableOpacity
               activeOpacity={0.8}
@@ -311,5 +327,28 @@ const styles = StyleSheet.create({
     color: "#33D6FF",
     fontSize: 14,
     fontWeight: "800",
+  },
+  passwordContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#0F1735",
+    borderWidth: 1,
+    borderColor: "rgba(139, 148, 200, 0.25)",
+    borderRadius: 14,
+    marginBottom: 16,
+  },
+
+  passwordInput: {
+    flex: 1,
+    paddingHorizontal: 16,
+    paddingVertical: 15,
+    color: "#FFFFFF",
+    fontSize: 15,
+  },
+
+  eyeButton: {
+    paddingHorizontal: 14,
+    justifyContent: "center",
+    alignItems: "center",
   },
 });
