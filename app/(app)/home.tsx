@@ -96,11 +96,7 @@ export default function HomeScreen() {
           <Text style={styles.emptyText}>No courses available.</Text>
         ) : (
           displayCourses.map((course: Course) => (
-            <TouchableOpacity
-              key={course.id}
-              style={styles.courseCard}
-              activeOpacity={0.85}
-            >
+            <View key={course.id} style={styles.courseCard}>
               <Image
                 source={{ uri: course.image }}
                 style={styles.courseImage}
@@ -129,8 +125,22 @@ export default function HomeScreen() {
 
                   <Text style={styles.price}>₹{course.price}</Text>
                 </View>
+
+                {courses.length === 0 && (
+                  <TouchableOpacity
+                    style={styles.enrollButton}
+                    onPress={() =>
+                      router.push({
+                        pathname: "/(app)/course/[id]",
+                        params: { id: String(course.id) },
+                      })
+                    }
+                  >
+                    <Text style={styles.enrollButtonText}>Enroll Now</Text>
+                  </TouchableOpacity>
+                )}
               </View>
-            </TouchableOpacity>
+            </View>
           ))
         )}
       </ScrollView>
@@ -235,5 +245,18 @@ const styles = StyleSheet.create({
     color: "#4CC3FF",
     fontSize: 18,
     fontWeight: "700",
+  },
+  enrollButton: {
+    marginTop: 18,
+    backgroundColor: "#4CC3FF",
+    borderRadius: 12,
+    paddingVertical: 14,
+    alignItems: "center",
+  },
+
+  enrollButtonText: {
+    color: "#050A1C",
+    fontWeight: "700",
+    fontSize: 16,
   },
 });
