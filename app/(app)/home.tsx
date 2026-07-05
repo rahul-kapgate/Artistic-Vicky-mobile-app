@@ -126,7 +126,21 @@ export default function HomeScreen() {
                   <Text style={styles.price}>₹{course.price}</Text>
                 </View>
 
-                {courses.length === 0 && (
+                {courses.length > 0 ? (
+                  <TouchableOpacity
+                    style={styles.continueButton}
+                    onPress={() =>
+                      router.push({
+                        pathname: "/(app)/course/dashboard",
+                        params: { id: String(course.id) },
+                      })
+                    }
+                  >
+                    <Text style={styles.continueButtonText}>
+                      Continue Learning →
+                    </Text>
+                  </TouchableOpacity>
+                ) : (
                   <TouchableOpacity
                     style={styles.enrollButton}
                     onPress={() =>
@@ -256,6 +270,21 @@ const styles = StyleSheet.create({
 
   enrollButtonText: {
     color: "#050A1C",
+    fontWeight: "700",
+    fontSize: 16,
+  },
+  continueButton: {
+    marginTop: 18,
+    backgroundColor: "#22C55E",
+    borderRadius: 12,
+    paddingVertical: 14,
+    alignItems: "center",
+    flexDirection: "row",
+    justifyContent: "center",
+  },
+
+  continueButtonText: {
+    color: "#FFFFFF",
     fontWeight: "700",
     fontSize: 16,
   },
