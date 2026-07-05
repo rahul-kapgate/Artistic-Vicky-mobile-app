@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "Artistic-Vicky-mobile",
-    "slug": "Artistic-Vicky-mobile",
+    "slug": "artisticvickey",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
@@ -19,7 +19,8 @@
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
       "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "package": "com.rahulkapgatesteam.artisticvickey"
     },
     "web": {
       "output": "static",
@@ -44,6 +45,13 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
-    }
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "c67ca720-c191-4882-8c30-6f4389d86f3d"
+      }
+    },
+    "owner": "rahul-kapgates-team"
   }
 }
