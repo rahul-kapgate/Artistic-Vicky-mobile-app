@@ -1,4 +1,5 @@
-import { useAuthStore } from "@/store/authStore"; // update the path
+import { useAuthStore } from "@/store/authStore";
+import Constants from "expo-constants";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
@@ -19,8 +20,13 @@ const { width } = Dimensions.get("window");
 
 export default function LandingScreen() {
   const { isAuthenticated } = useAuthStore();
-
   const router = useRouter();
+
+  const appVersion =
+    Constants.expoConfig?.version ||
+    Constants.manifest2?.extra?.expoClient?.version ||
+    "1.1.0";
+
   return (
     <SafeAreaView style={styles.safeArea} edges={["top", "bottom"]}>
       <StatusBar style="light" />
@@ -47,6 +53,7 @@ export default function LandingScreen() {
                 style={styles.logoImage}
                 resizeMode="contain"
               />
+              <Text style={styles.versionText}>v{appVersion}</Text>
             </View>
             {/* Title */}
             <Text style={styles.title}>
@@ -269,5 +276,13 @@ const styles = StyleSheet.create({
     color: "#8D9AB8",
     fontSize: 14,
     fontWeight: "500",
+  },
+
+  versionText: {
+    marginTop: 6,
+    color: "#8D9AB8",
+    fontSize: 13,
+    fontWeight: "600",
+    letterSpacing: 0.5,
   },
 });
