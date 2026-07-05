@@ -1,15 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import React from "react";
-import {
-    Dimensions,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
-} from "react-native";
-
-const { width } = Dimensions.get("window");
+import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
 interface Props {
   title: string;
@@ -30,9 +22,10 @@ export default function CourseSectionCard({
 }: Props) {
   return (
     <TouchableOpacity
-      activeOpacity={0.9}
+      activeOpacity={0.86}
       onPress={onPress}
       style={styles.wrapper}
+      accessibilityRole="button"
     >
       <LinearGradient
         colors={colors}
@@ -40,60 +33,87 @@ export default function CourseSectionCard({
         end={{ x: 1, y: 1 }}
         style={styles.card}
       >
-        {/* Top Row */}
+        <View style={styles.glowCircleLarge} />
+        <View style={styles.glowCircleSmall} />
+
         <View style={styles.header}>
           <View style={styles.iconContainer}>
-            <Icon name={iconName} size={32} color="#FFFFFF" />
+            <Icon name={iconName} size={30} color="#FFFFFF" />
           </View>
 
-          <Ionicons
-            name="arrow-forward-circle"
-            size={28}
-            color="rgba(255,255,255,0.9)"
-          />
+          <View style={styles.arrowCircle}>
+            <Ionicons name="arrow-forward" size={20} color="#FFFFFF" />
+          </View>
         </View>
 
-        {/* Content */}
         <View style={styles.content}>
-          <Text style={styles.title}>{title}</Text>
+          <Text numberOfLines={1} style={styles.title}>
+            {title}
+          </Text>
 
-          <Text style={styles.subtitle}>{subtitle}</Text>
+          <Text numberOfLines={2} style={styles.subtitle}>
+            {subtitle}
+          </Text>
         </View>
 
-        {/* Footer */}
         <View style={styles.footer}>
-          <Text style={styles.footerText}>Open Section</Text>
+          <View>
+            <Text style={styles.footerLabel}>Open Section</Text>
+            <Text style={styles.footerHint}>Tap to continue</Text>
+          </View>
 
-          <Ionicons name="chevron-forward" size={18} color="#FFFFFF" />
+          <Ionicons name="chevron-forward" size={22} color="#FFFFFF" />
         </View>
       </LinearGradient>
     </TouchableOpacity>
   );
 }
 
-const CARD_WIDTH = width - 40;
-
 const styles = StyleSheet.create({
   wrapper: {
-    marginBottom: 20,
+    width: "100%",
   },
 
   card: {
-    width: CARD_WIDTH,
-    minHeight: 180,
-    borderRadius: 24,
-    padding: 22,
+    width: "100%",
+    minHeight: 178,
+    borderRadius: 26,
+    padding: 20,
     justifyContent: "space-between",
+    overflow: "hidden",
 
-    shadowColor: "#000",
-    shadowOpacity: 0.35,
-    shadowRadius: 12,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.14)",
+
+    shadowColor: "#33D6FF",
+    shadowOpacity: 0.18,
+    shadowRadius: 18,
     shadowOffset: {
       width: 0,
       height: 8,
     },
 
     elevation: 8,
+  },
+
+  glowCircleLarge: {
+    position: "absolute",
+    width: 180,
+    height: 180,
+    borderRadius: 90,
+    right: -70,
+    top: -70,
+    backgroundColor: "rgba(255,255,255,0.12)",
+  },
+
+  glowCircleSmall: {
+    position: "absolute",
+    width: 90,
+    height: 90,
+    borderRadius: 45,
+    left: -28,
+    bottom: -28,
+    backgroundColor: "rgba(255,255,255,0.08)",
   },
 
   header: {
@@ -105,27 +125,43 @@ const styles = StyleSheet.create({
   iconContainer: {
     width: 58,
     height: 58,
-    borderRadius: 18,
+    borderRadius: 20,
     backgroundColor: "rgba(255,255,255,0.18)",
     justifyContent: "center",
     alignItems: "center",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.22)",
+  },
+
+  arrowCircle: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    backgroundColor: "rgba(255,255,255,0.16)",
+    justifyContent: "center",
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.2)",
   },
 
   content: {
-    marginVertical: 18,
+    marginTop: 18,
+    marginBottom: 18,
   },
 
   title: {
     color: "#FFFFFF",
-    fontSize: 24,
-    fontWeight: "700",
-    marginBottom: 10,
+    fontSize: 23,
+    fontWeight: "900",
+    marginBottom: 8,
+    letterSpacing: -0.3,
   },
 
   subtitle: {
-    color: "rgba(255,255,255,0.85)",
-    fontSize: 15,
+    color: "rgba(255,255,255,0.84)",
+    fontSize: 14.5,
     lineHeight: 22,
+    fontWeight: "500",
   },
 
   footer: {
@@ -134,12 +170,19 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     borderTopWidth: 1,
     borderTopColor: "rgba(255,255,255,0.18)",
-    paddingTop: 16,
+    paddingTop: 14,
   },
 
-  footerText: {
+  footerLabel: {
     color: "#FFFFFF",
     fontSize: 15,
+    fontWeight: "800",
+  },
+
+  footerHint: {
+    color: "rgba(255,255,255,0.68)",
+    fontSize: 12,
     fontWeight: "600",
+    marginTop: 3,
   },
 });
