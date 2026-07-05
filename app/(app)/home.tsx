@@ -35,16 +35,19 @@ export default function HomeScreen() {
     enabled: !!profile?.id,
   });
 
-  const { data: allCourses = [] } = useQuery({
+  const { data: allCourses = [], isLoading: allCoursesLoading } = useQuery({
     queryKey: ["all-courses"],
     queryFn: getAllCourses,
-    enabled: courses.length === 0,
+    enabled: !!profile?.id,
   });
 
-  const displayCourses = courses.length > 0 ? courses : allCourses;
+  const enrolledCourseIds = new Set(courses.map((course) => String(course.id)));
 
-  const sectionTitle =
-    courses.length > 0 ? "My Courses" : "Recommended Courses";
+  const notEnrolledCourses = allCourses.filter(
+    (course) => !enrolledCourseIds.has(String(course.id)),
+  );
+
+  const hasEnrolledCourses = courses.length > 0;
 
   if (profileLoading) {
     return (
@@ -58,6 +61,7 @@ export default function HomeScreen() {
     return (
       <SafeAreaView style={styles.loadingContainer}>
         <Text style={{ color: "#fff" }}>Something went wrong.</Text>
+
         <TouchableOpacity onPress={() => refetch()}>
           <Text style={{ color: "#4CC3FF", marginTop: 12 }}>Retry</Text>
         </TouchableOpacity>
@@ -68,6 +72,7 @@ export default function HomeScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar style="light" />
+
       <ScrollView
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
@@ -88,74 +93,162 @@ export default function HomeScreen() {
           </TouchableOpacity>
         </View>
 
-        <Text style={styles.sectionTitle}>{sectionTitle}</Text>
-
         {coursesLoading ? (
           <ActivityIndicator color="#4CC3FF" />
-        ) : displayCourses.length === 0 ? (
-          <Text style={styles.emptyText}>No courses available.</Text>
-        ) : (
-          displayCourses.map((course: Course) => (
-            <View key={course.id} style={styles.courseCard}>
-              <Image
-                source={{ uri: course.image }}
-                style={styles.courseImage}
-                resizeMode="cover"
-              />
+        ) : hasEnrolledCourses ? (
+          <>
+            <Text style={styles.sectionTitle}>My Courses</Text>
 
-              <View style={styles.courseContent}>
+            {courses.map((course: Course) => (
+              <View key={course.id} style={styles.enrolledCourseCard}>
                 <Text numberOfLines={2} style={styles.courseTitle}>
                   {course.course_name}
                 </Text>
 
                 <Text style={styles.courseCategory}>{course.category}</Text>
 
-                <Text style={styles.courseMeta}>
-                  Duration: {course.duration}
-                </Text>
-
-                {!!course.language && (
+                <View style={styles.metaBox}>
                   <Text style={styles.courseMeta}>
-                    Language: {course.language}
+                    Duration: {course.duration}
                   </Text>
-                )}
 
-                <View style={styles.bottomRow}>
-                  <Text style={styles.rating}>⭐ {course.rating}</Text>
-
-                  <Text style={styles.price}>₹{course.price}</Text>
+                  {!!course.language && (
+                    <Text style={styles.courseMeta}>
+                      Language: {course.language}
+                    </Text>
+                  )}
                 </View>
 
-                {courses.length > 0 ? (
-                  <TouchableOpacity
-                    style={styles.continueButton}
-                    onPress={() =>
-                      router.push({
-                        pathname: "/(app)/course/dashboard",
-                        params: { id: String(course.id) },
-                      })
-                    }
-                  >
-                    <Text style={styles.continueButtonText}>
-                      Continue Learning →
-                    </Text>
-                  </TouchableOpacity>
-                ) : (
-                  <TouchableOpacity
-                    style={styles.enrollButton}
-                    onPress={() =>
-                      router.push({
-                        pathname: "/(app)/course/[id]",
-                        params: { id: String(course.id) },
-                      })
-                    }
-                  >
-                    <Text style={styles.enrollButtonText}>Enroll Now</Text>
-                  </TouchableOpacity>
-                )}
+                <TouchableOpacity
+                  style={styles.continueButton}
+                  onPress={() =>
+                    router.push({
+                      pathname: "/(app)/course/dashboard",
+                      params: { id: String(course.id) },
+                    })
+                  }
+                >
+                  <Text style={styles.continueButtonText}>
+                    Continue Learning →
+                  </Text>
+                </TouchableOpacity>
               </View>
-            </View>
-          ))
+            ))}
+
+            <Text style={[styles.sectionTitle, styles.secondSectionTitle]}>
+              Explore More Courses
+            </Text>
+
+            {allCoursesLoading ? (
+              <ActivityIndicator color="#4CC3FF" />
+            ) : notEnrolledCourses.length === 0 ? (
+              <Text style={styles.emptyText}>
+                You are already enrolled in all available courses.
+              </Text>
+            ) : (
+              notEnrolledCourses.map((course: Course) => (
+                <View key={course.id} style={styles.courseCard}>
+                  <Image
+                    source={{ uri: course.image }}
+                    style={styles.courseImage}
+                    resizeMode="cover"
+                  />
+
+                  <View style={styles.courseContent}>
+                    <Text numberOfLines={2} style={styles.courseTitle}>
+                      {course.course_name}
+                    </Text>
+
+                    <Text style={styles.courseCategory}>{course.category}</Text>
+
+                    <Text style={styles.courseMeta}>
+                      Duration: {course.duration}
+                    </Text>
+
+                    {!!course.language && (
+                      <Text style={styles.courseMeta}>
+                        Language: {course.language}
+                      </Text>
+                    )}
+
+                    <View style={styles.bottomRow}>
+                      <Text style={styles.rating}>⭐ {course.rating}</Text>
+
+                      <Text style={styles.price}>₹{course.price}</Text>
+                    </View>
+
+                    <TouchableOpacity
+                      style={styles.enrollButton}
+                      onPress={() =>
+                        router.push({
+                          pathname: "/(app)/course/[id]",
+                          params: { id: String(course.id) },
+                        })
+                      }
+                    >
+                      <Text style={styles.enrollButtonText}>Enroll Now</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              ))
+            )}
+          </>
+        ) : (
+          <>
+            <Text style={styles.sectionTitle}>Recommended Courses</Text>
+
+            {allCoursesLoading ? (
+              <ActivityIndicator color="#4CC3FF" />
+            ) : allCourses.length === 0 ? (
+              <Text style={styles.emptyText}>No courses available.</Text>
+            ) : (
+              allCourses.map((course: Course) => (
+                <View key={course.id} style={styles.courseCard}>
+                  <Image
+                    source={{ uri: course.image }}
+                    style={styles.courseImage}
+                    resizeMode="cover"
+                  />
+
+                  <View style={styles.courseContent}>
+                    <Text numberOfLines={2} style={styles.courseTitle}>
+                      {course.course_name}
+                    </Text>
+
+                    <Text style={styles.courseCategory}>{course.category}</Text>
+
+                    <Text style={styles.courseMeta}>
+                      Duration: {course.duration}
+                    </Text>
+
+                    {!!course.language && (
+                      <Text style={styles.courseMeta}>
+                        Language: {course.language}
+                      </Text>
+                    )}
+
+                    <View style={styles.bottomRow}>
+                      <Text style={styles.rating}>⭐ {course.rating}</Text>
+
+                      <Text style={styles.price}>₹{course.price}</Text>
+                    </View>
+
+                    <TouchableOpacity
+                      style={styles.enrollButton}
+                      onPress={() =>
+                        router.push({
+                          pathname: "/(app)/course/[id]",
+                          params: { id: String(course.id) },
+                        })
+                      }
+                    >
+                      <Text style={styles.enrollButtonText}>Enroll Now</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              ))
+            )}
+          </>
         )}
       </ScrollView>
     </SafeAreaView>
@@ -276,16 +369,32 @@ const styles = StyleSheet.create({
   continueButton: {
     marginTop: 18,
     backgroundColor: "#22C55E",
-    borderRadius: 12,
+    borderRadius: 14,
     paddingVertical: 14,
     alignItems: "center",
-    flexDirection: "row",
     justifyContent: "center",
   },
 
   continueButtonText: {
     color: "#FFFFFF",
-    fontWeight: "700",
+    fontWeight: "800",
     fontSize: 16,
+  },
+
+  enrolledCourseCard: {
+    backgroundColor: "#0F1735",
+    borderRadius: 18,
+    padding: 18,
+    marginBottom: 18,
+    borderWidth: 1,
+    borderColor: "rgba(76, 195, 255, 0.18)",
+  },
+
+  metaBox: {
+    marginTop: 8,
+  },
+
+  secondSectionTitle: {
+    marginTop: 18,
   },
 });

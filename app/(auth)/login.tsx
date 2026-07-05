@@ -7,6 +7,7 @@ import * as SecureStore from "expo-secure-store";
 import { StatusBar } from "expo-status-bar";
 import React, { useState } from "react";
 import {
+  ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
@@ -118,18 +119,32 @@ export default function LoginScreen() {
             </TouchableOpacity>
 
             <LinearGradient
-              colors={["#FF4DA6", "#6A5CFF", "#33D6FF"]}
-              style={styles.loginGradient}
+              colors={
+                loginMutation.isPending
+                  ? ["#334155", "#475569"]
+                  : ["#FF3FA7", "#7C3AED", "#33D6FF"]
+              }
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={[
+                styles.loginGradient,
+                loginMutation.isPending && styles.loginGradientDisabled,
+              ]}
             >
               <TouchableOpacity
-                activeOpacity={0.9}
+                activeOpacity={0.85}
                 style={styles.loginButton}
                 onPress={() => loginMutation.mutate()}
                 disabled={loginMutation.isPending}
               >
-                <Text style={styles.loginButtonText}>
-                  {loginMutation.isPending ? "Logging In..." : "Log In"}
-                </Text>
+                {loginMutation.isPending ? (
+                  <View style={styles.loginLoadingRow}>
+                    <ActivityIndicator size="small" color="#FFFFFF" />
+                    <Text style={styles.loginButtonText}>Logging In...</Text>
+                  </View>
+                ) : (
+                  <Text style={styles.loginButtonText}>Log In</Text>
+                )}
               </TouchableOpacity>
             </LinearGradient>
 
@@ -267,18 +282,45 @@ const styles = StyleSheet.create({
   },
 
   loginGradient: {
-    borderRadius: 14,
+    borderRadius: 999,
     overflow: "hidden",
     marginBottom: 18,
+    shadowColor: "#33D6FF",
+    shadowOpacity: 0.35,
+    shadowRadius: 18,
+    shadowOffset: {
+      width: 0,
+      height: 8,
+    },
+    elevation: 10,
   },
+
+  loginGradientDisabled: {
+    shadowOpacity: 0.12,
+    elevation: 3,
+  },
+
   loginButton: {
+    minHeight: 48,
     paddingVertical: 16,
     alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.18)",
   },
+
+  loginLoadingRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 10,
+  },
+
   loginButtonText: {
     color: "#FFFFFF",
     fontSize: 16,
-    fontWeight: "800",
+    fontWeight: "900",
+    letterSpacing: 0.4,
   },
 
   dividerRow: {
