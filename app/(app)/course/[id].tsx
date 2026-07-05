@@ -67,7 +67,7 @@ export default function CourseDetailScreen() {
           <Ionicons name="alert-circle-outline" size={42} color="#FF6B9A" />
         </View>
 
-        <Text style={styles.errorTitle}>Course not found</Text>
+        <Text style={styles.errorTitle}>Course not found 1</Text>
 
         <Text style={styles.errorDescription}>
           We couldn’t load this course. Please try again.

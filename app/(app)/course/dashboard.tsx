@@ -16,7 +16,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import CourseSectionCard from "./components/CourseSectionCard";
-import { SECTION_CONFIG } from "./components/sectionConfig";
+import SECTION_CONFIG from "./components/sectionConfig";
 
 export default function CourseDashboardScreen() {
   const router = useRouter();

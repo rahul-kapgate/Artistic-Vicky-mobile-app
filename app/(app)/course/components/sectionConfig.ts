@@ -1,11 +1,11 @@
 import {
-    Feather,
-    FontAwesome5,
-    Ionicons,
-    MaterialCommunityIcons,
+  Feather,
+  FontAwesome5,
+  Ionicons,
+  MaterialCommunityIcons,
 } from "@expo/vector-icons";
 
-export const SECTION_CONFIG: Record<
+const SECTION_CONFIG: Record<
   string,
   {
     title: string;
@@ -55,3 +55,5 @@ export const SECTION_CONFIG: Record<
     colors: ["#DB2777", "#9D174D"],
   },
 };
+
+export default SECTION_CONFIG;
