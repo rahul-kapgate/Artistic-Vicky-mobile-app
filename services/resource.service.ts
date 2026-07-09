@@ -15,5 +15,5 @@ export const getAllResourcesByCourseId = async (
 
 export const getResourceStreamUrl = (resourceId: number) => {
   const baseURL = api.defaults.baseURL?.replace(/\/+$/, "") || "";
-  return `${baseURL}/api/resource/${resourceId}/file`;
+  return `${baseURL}/resource/${resourceId}/file`;
 };
