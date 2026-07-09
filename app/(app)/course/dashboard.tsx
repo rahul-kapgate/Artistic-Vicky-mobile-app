@@ -47,7 +47,7 @@ export default function CourseDashboardScreen() {
     switch (section) {
       case "resources":
         router.push({
-          pathname: "/(app)/course/resources",
+          pathname: "/(app)/course/resources/resources",
           params: { id: courseId },
         });
         break;
@@ -61,7 +61,7 @@ export default function CourseDashboardScreen() {
 
       case "mock-test":
         router.push({
-          pathname: "/(app)/course/mock-tests",
+          pathname: "/(app)/course/videos/videos",
           params: { id: courseId },
         });
         break;
