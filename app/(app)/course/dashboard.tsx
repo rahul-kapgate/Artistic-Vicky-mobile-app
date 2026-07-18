@@ -10,13 +10,13 @@ import {
   StyleSheet,
   Text,
   TouchableOpacity,
-  View
+  View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { CourseDashboardSkeleton } from "@/components/skeletons/CourseDashboardSkeleton";
-import CourseSectionCard from "./components/CourseSectionCard";
-import SECTION_CONFIG from "./components/sectionConfig";
+import CourseSectionCard from "../../../components/course/CourseSectionCard";
+import SECTION_CONFIG from "../../../constants/sectionConfig";
 
 export default function CourseDashboardScreen() {
   const router = useRouter();
@@ -47,9 +47,9 @@ export default function CourseDashboardScreen() {
     switch (section) {
       case "resources":
         router.push({
-          pathname: "/(app)/course/resources/resources",
+          pathname: "/(app)/course/resources/[courseId]",
           params: {
-            id: courseId,
+            courseId: String(course.id),
           },
         });
         break;

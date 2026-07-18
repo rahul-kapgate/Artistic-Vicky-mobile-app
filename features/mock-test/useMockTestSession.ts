@@ -106,7 +106,10 @@ export function useMockTestSession({
 
         const safeAnswers = Object.fromEntries(
           Object.entries(parsed.answers)
-            .map(([questionId, optionId]) => [Number(questionId), Number(optionId)])
+            .map(([questionId, optionId]) => [
+              Number(questionId),
+              Number(optionId),
+            ])
             .filter(
               ([questionId, optionId]) =>
                 Number.isFinite(questionId) && Number.isFinite(optionId),
@@ -169,12 +172,18 @@ export function useMockTestSession({
   const submit = useCallback(
     async ({ allowEmpty = false }: { allowEmpty?: boolean } = {}) => {
       if (submitMutation.isPending) {
-        return { ok: false as const, error: "Submission is already in progress." };
+        return {
+          ok: false as const,
+          error: "Submission is already in progress.",
+        };
       }
 
       const answerEntries = Object.entries(answersRef.current);
       if (!allowEmpty && answerEntries.length === 0) {
-        return { ok: false as const, error: "Attempt at least one question first." };
+        return {
+          ok: false as const,
+          error: "Attempt at least one question first.",
+        };
       }
 
       const formattedAnswers: SubmitAnswer[] = answerEntries.map(
@@ -202,7 +211,8 @@ export function useMockTestSession({
         setSubmitError(message);
         return { ok: false as const, error: message };
       }
-    }, [resourceId, storageKey, submitMutation, type],
+    },
+    [resourceId, storageKey, submitMutation, type],
   );
 
   useEffect(() => {
