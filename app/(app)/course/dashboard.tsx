@@ -83,12 +83,7 @@ export default function CourseDashboardScreen() {
         break;
 
       case "live-test":
-        router.push({
-          pathname: "/(app)/course/live-tests",
-          params: {
-            id: courseId,
-          },
-        });
+        router.push("/(app)/course/live-tests");
         break;
 
       default:
