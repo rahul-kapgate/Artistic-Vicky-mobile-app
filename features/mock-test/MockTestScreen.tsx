@@ -1,10 +1,10 @@
 import { Ionicons } from "@expo/vector-icons";
+import { usePreventRemove } from "@react-navigation/native";
 import * as Haptics from "expo-haptics";
 import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
 import { router, useNavigation } from "expo-router";
-import { usePreventRemove } from "@react-navigation/native";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -13,13 +13,14 @@ import {
   Modal,
   Platform,
   Pressable,
-  SafeAreaView,
   ScrollView,
   StatusBar,
   StyleSheet,
   Text,
+  useWindowDimensions,
   View,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 import { useMockTestSession } from "@/features/mock-test/useMockTestSession";
 import type {
@@ -46,6 +47,26 @@ const COLORS = {
 
 const WHATSAPP_NUMBER = "919325217691";
 const OPTION_LABELS = ["A", "B", "C", "D", "E", "F"];
+
+const SMALL_PHONE_BREAKPOINT = 360;
+const TABLET_BREAKPOINT = 768;
+const QUESTION_CONTENT_MAX_WIDTH = 760;
+const RULES_CONTENT_MAX_WIDTH = 680;
+const RESULT_CONTENT_MAX_WIDTH = 620;
+const TRACKER_CONTENT_MAX_WIDTH = 760;
+
+function getHorizontalPadding(width: number): number {
+  if (width < SMALL_PHONE_BREAKPOINT) return 12;
+  if (width >= TABLET_BREAKPOINT) return 24;
+  return 16;
+}
+
+function getTrackerColumnCount(width: number): number {
+  if (width < SMALL_PHONE_BREAKPOINT) return 4;
+  if (width < 600) return 5;
+  if (width < 900) return 7;
+  return 8;
+}
 
 interface MockTestScreenProps {
   type: MockTestType;
@@ -142,7 +163,7 @@ function TimerPill({ timeLeft }: { timeLeft: number }) {
 
 function LoadingScreen() {
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={styles.safeArea} edges={["top", "bottom"]}>
       <StatusBar barStyle="light-content" />
       <View style={styles.centerState}>
         <ActivityIndicator size="large" color={COLORS.cyan} />
@@ -163,7 +184,7 @@ function ErrorScreen({
   onRetry: () => void;
 }) {
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={styles.safeArea} edges={["top", "bottom"]}>
       <StatusBar barStyle="light-content" />
       <View style={styles.centerState}>
         <View style={styles.errorIcon}>
@@ -188,12 +209,17 @@ function RulesScreen({
   questionCount: number;
   onStart: () => void;
 }) {
+  const { width, height } = useWindowDimensions();
+  const horizontalPadding = getHorizontalPadding(width);
   const label = type === "mock" ? "Mock Test" : "PYQ Test";
   const rules = [
     ["time-outline", "You have 60 minutes to complete the test."],
     ["stats-chart-outline", "Each question carries equal marks."],
     ["book-outline", "You can review and change answers before submitting."],
-    ["phone-portrait-outline", "Your progress is saved if the app goes to background."],
+    [
+      "phone-portrait-outline",
+      "Your progress is saved if the app goes to background.",
+    ],
     ["wifi-outline", "Use a stable internet connection when submitting."],
   ] as const;
 
@@ -217,14 +243,21 @@ function RulesScreen({
   };
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={styles.safeArea} edges={["top", "bottom"]}>
       <StatusBar barStyle="light-content" />
       <LinearGradient
         colors={["#08111b", COLORS.background, COLORS.background]}
         style={styles.flex}
       >
         <ScrollView
-          contentContainerStyle={styles.rulesContainer}
+          contentContainerStyle={[
+            styles.rulesContainer,
+            {
+              paddingHorizontal: horizontalPadding,
+              paddingTop: height < 700 ? 10 : 16,
+              paddingBottom: height < 700 ? 22 : 36,
+            },
+          ]}
           showsVerticalScrollIndicator={false}
         >
           <Pressable
@@ -299,10 +332,7 @@ function OptionItem({
       ]}
     >
       <View
-        style={[
-          styles.optionLabel,
-          selected && styles.optionLabelSelected,
-        ]}
+        style={[styles.optionLabel, selected && styles.optionLabelSelected]}
       >
         <Text
           style={[
@@ -319,11 +349,7 @@ function OptionItem({
       </Text>
 
       {selected ? (
-        <Ionicons
-          name="checkmark-circle"
-          size={21}
-          color={COLORS.cyan}
-        />
+        <Ionicons name="checkmark-circle" size={21} color={COLORS.cyan} />
       ) : null}
     </Pressable>
   );
@@ -350,7 +376,16 @@ function QuestionTrackerModal({
   onJump: (index: number) => void;
   onSubmit: () => void;
 }) {
+  const { width } = useWindowDimensions();
   const answeredCount = Object.keys(answers).length;
+  const trackerColumns = getTrackerColumnCount(width);
+  const trackerGap = width < SMALL_PHONE_BREAKPOINT ? 7 : 9;
+  const trackerHorizontalPadding = getHorizontalPadding(width);
+  const trackerContentWidth =
+    Math.min(width, TRACKER_CONTENT_MAX_WIDTH) - trackerHorizontalPadding * 2;
+  const trackerCellSize = Math.floor(
+    (trackerContentWidth - trackerGap * (trackerColumns - 1)) / trackerColumns,
+  );
 
   return (
     <Modal
@@ -359,12 +394,13 @@ function QuestionTrackerModal({
       presentationStyle={Platform.OS === "ios" ? "pageSheet" : "fullScreen"}
       onRequestClose={onClose}
     >
-      <SafeAreaView style={styles.trackerSafeArea}>
+      <SafeAreaView style={styles.trackerSafeArea} edges={["top", "bottom"]}>
         <View style={styles.trackerHeader}>
           <View>
             <Text style={styles.trackerTitle}>Question Tracker</Text>
             <Text style={styles.trackerSubtitle}>
-              {answeredCount} answered · {questions.length - answeredCount} remaining
+              {answeredCount} answered · {questions.length - answeredCount}{" "}
+              remaining
             </Text>
           </View>
           <Pressable
@@ -382,11 +418,16 @@ function QuestionTrackerModal({
         </View>
 
         <FlatList
+          key={`tracker-${trackerColumns}`}
           data={questions}
           keyExtractor={(item) => String(item.id)}
-          numColumns={5}
-          contentContainerStyle={styles.trackerGrid}
-          columnWrapperStyle={styles.trackerColumn}
+          numColumns={trackerColumns}
+          style={styles.trackerList}
+          contentContainerStyle={[
+            styles.trackerGrid,
+            { paddingHorizontal: trackerHorizontalPadding },
+          ]}
+          columnWrapperStyle={[styles.trackerColumn, { gap: trackerGap }]}
           renderItem={({ item, index }) => {
             const answered = answers[item.id] !== undefined;
             const active = index === currentIndex;
@@ -398,6 +439,11 @@ function QuestionTrackerModal({
                 onPress={() => onJump(index)}
                 style={[
                   styles.trackerCell,
+                  {
+                    width: trackerCellSize,
+                    height: trackerCellSize,
+                    maxWidth: trackerCellSize,
+                  },
                   answered && styles.trackerCellAnswered,
                   active && styles.trackerCellActive,
                 ]}
@@ -438,6 +484,8 @@ function ResultScreen({
   result: SubmitTestResponse;
   showPromo: boolean;
 }) {
+  const { width, height } = useWindowDimensions();
+  const horizontalPadding = getHorizontalPadding(width);
   const percentage = result.totalQuestions
     ? Math.round((result.score / result.totalQuestions) * 100)
     : 0;
@@ -464,10 +512,16 @@ function ResultScreen({
   const paidMockMessage = `Hi, I completed the free mock test and scored ${result.score}/${result.totalQuestions}. I am interested in the paid mock test for better evaluation. Please share the details.`;
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={styles.safeArea} edges={["top", "bottom"]}>
       <StatusBar barStyle="light-content" />
       <ScrollView
-        contentContainerStyle={styles.resultContainer}
+        contentContainerStyle={[
+          styles.resultContainer,
+          {
+            paddingHorizontal: horizontalPadding,
+            paddingVertical: height < 700 ? 18 : 30,
+          },
+        ]}
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.resultCard}>
@@ -540,6 +594,10 @@ export function MockTestScreen({
   showPromo = false,
 }: MockTestScreenProps) {
   const navigation = useNavigation();
+  const { width, height } = useWindowDimensions();
+  const horizontalPadding = getHorizontalPadding(width);
+  const isSmallPhone = width < SMALL_PHONE_BREAKPOINT;
+  const isTablet = width >= TABLET_BREAKPOINT;
   const [trackerOpen, setTrackerOpen] = useState(false);
   const [canLeave, setCanLeave] = useState(false);
   const pendingNavigationAction = useRef<unknown>(null);
@@ -604,7 +662,10 @@ export function MockTestScreen({
 
   const handleManualSubmit = () => {
     if (session.answeredCount === 0 && session.timeLeft > 0) {
-      Alert.alert("No answers selected", "Attempt at least one question first.");
+      Alert.alert(
+        "No answers selected",
+        "Attempt at least one question first.",
+      );
       return;
     }
 
@@ -678,10 +739,12 @@ export function MockTestScreen({
   }
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={styles.safeArea} edges={["top", "bottom"]}>
       <StatusBar barStyle="light-content" />
       <View style={styles.testScreen}>
-        <View style={styles.testHeader}>
+        <View
+          style={[styles.testHeader, { paddingHorizontal: horizontalPadding }]}
+        >
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="Leave test"
@@ -708,14 +771,21 @@ export function MockTestScreen({
           </Pressable>
         </View>
 
-        <View style={styles.testMetaRow}>
+        <View
+          style={[styles.testMetaRow, { paddingHorizontal: horizontalPadding }]}
+        >
           <TimerPill timeLeft={session.timeLeft} />
           <Text style={styles.answeredText}>
             {session.answeredCount} answered
           </Text>
         </View>
 
-        <View style={styles.progressTrack}>
+        <View
+          style={[
+            styles.progressTrack,
+            { marginHorizontal: horizontalPadding },
+          ]}
+        >
           <LinearGradient
             colors={[COLORS.cyan, COLORS.blue]}
             start={{ x: 0, y: 0 }}
@@ -725,9 +795,16 @@ export function MockTestScreen({
         </View>
 
         {session.timeLeft === 0 || session.submitError ? (
-          <View style={styles.submitBanner}>
+          <View
+            style={[
+              styles.submitBanner,
+              { marginHorizontal: horizontalPadding },
+            ]}
+          >
             <Ionicons
-              name={session.submitError ? "warning-outline" : "cloud-upload-outline"}
+              name={
+                session.submitError ? "warning-outline" : "cloud-upload-outline"
+              }
               size={18}
               color={session.submitError ? COLORS.red : timerColor}
             />
@@ -748,10 +825,25 @@ export function MockTestScreen({
         ) : null}
 
         <ScrollView
-          contentContainerStyle={styles.questionScrollContent}
+          contentContainerStyle={[
+            styles.questionScrollContent,
+            {
+              paddingHorizontal: horizontalPadding,
+              paddingTop: height < 650 ? 10 : 16,
+              paddingBottom: height < 650 ? 16 : 28,
+            },
+          ]}
           showsVerticalScrollIndicator={false}
         >
-          <View style={styles.questionCard}>
+          <View
+            style={[
+              styles.questionCard,
+              {
+                maxWidth: QUESTION_CONTENT_MAX_WIDTH,
+                padding: isSmallPhone ? 14 : isTablet ? 24 : 18,
+              },
+            ]}
+          >
             <View style={styles.questionMeta}>
               <Text style={styles.questionNumber}>
                 Q{session.currentIndex + 1}
@@ -763,14 +855,28 @@ export function MockTestScreen({
               ) : null}
             </View>
 
-            <Text style={styles.questionText}>
+            <Text
+              style={[
+                styles.questionText,
+                {
+                  fontSize: isSmallPhone ? 15 : isTablet ? 19 : 17,
+                  lineHeight: isSmallPhone ? 23 : isTablet ? 29 : 26,
+                },
+              ]}
+            >
               {currentQuestion.question_text}
             </Text>
 
             {currentQuestion.image_url ? (
               <Image
                 source={{ uri: currentQuestion.image_url }}
-                style={styles.questionImage}
+                style={[
+                  styles.questionImage,
+                  {
+                    aspectRatio: isTablet ? 16 / 9 : 4 / 3,
+                    maxHeight: isTablet ? 420 : 320,
+                  },
+                ]}
                 contentFit="contain"
                 transition={200}
                 accessibilityLabel="Question illustration"
@@ -783,9 +889,7 @@ export function MockTestScreen({
                   key={option.id}
                   option={option}
                   index={index}
-                  selected={
-                    session.answers[currentQuestion.id] === option.id
-                  }
+                  selected={session.answers[currentQuestion.id] === option.id}
                   onSelect={() => handleSelect(currentQuestion.id, option.id)}
                 />
               ))}
@@ -793,38 +897,53 @@ export function MockTestScreen({
           </View>
         </ScrollView>
 
-        <View style={styles.navigationFooter}>
-          <View style={styles.footerButtonWrap}>
-            <AppButton
-              title="Previous"
-              icon="chevron-back"
-              variant="ghost"
-              disabled={session.currentIndex === 0 || session.submitting}
-              onPress={session.goPrevious}
-            />
-          </View>
-
-          <Text style={styles.footerCounter}>
-            {session.currentIndex + 1}/{session.questions.length}
-          </Text>
-
-          <View style={styles.footerButtonWrap}>
-            {currentIsLast ? (
+        <View
+          style={[
+            styles.navigationFooter,
+            {
+              paddingHorizontal: isSmallPhone ? 8 : 12,
+              paddingVertical: height < 650 ? 7 : 10,
+            },
+          ]}
+        >
+          <View
+            style={[
+              styles.navigationFooterInner,
+              { maxWidth: QUESTION_CONTENT_MAX_WIDTH },
+            ]}
+          >
+            <View style={styles.footerButtonWrap}>
               <AppButton
-                title={session.submitting ? "Submitting…" : "Submit"}
-                icon="checkmark-done-outline"
-                disabled={session.submitting}
-                onPress={handleManualSubmit}
+                title="Previous"
+                icon="chevron-back"
+                variant="ghost"
+                disabled={session.currentIndex === 0 || session.submitting}
+                onPress={session.goPrevious}
               />
-            ) : (
-              <AppButton
-                title="Next"
-                icon="chevron-forward"
-                variant="secondary"
-                disabled={session.submitting}
-                onPress={session.goNext}
-              />
-            )}
+            </View>
+
+            <Text style={styles.footerCounter}>
+              {session.currentIndex + 1}/{session.questions.length}
+            </Text>
+
+            <View style={styles.footerButtonWrap}>
+              {currentIsLast ? (
+                <AppButton
+                  title={session.submitting ? "Submitting…" : "Submit"}
+                  icon="checkmark-done-outline"
+                  disabled={session.submitting}
+                  onPress={handleManualSubmit}
+                />
+              ) : (
+                <AppButton
+                  title="Next"
+                  icon="chevron-forward"
+                  variant="secondary"
+                  disabled={session.submitting}
+                  onPress={session.goNext}
+                />
+              )}
+            </View>
           </View>
         </View>
       </View>
@@ -919,13 +1038,13 @@ const styles = StyleSheet.create({
   },
   rulesContainer: {
     flexGrow: 1,
-    paddingHorizontal: 20,
-    paddingTop: 16,
-    paddingBottom: 36,
     justifyContent: "center",
+    alignItems: "center",
   },
   backButton: {
-    alignSelf: "flex-start",
+    width: "100%",
+    maxWidth: RULES_CONTENT_MAX_WIDTH,
+    alignSelf: "center",
     flexDirection: "row",
     alignItems: "center",
     gap: 7,
@@ -934,6 +1053,9 @@ const styles = StyleSheet.create({
   },
   backButtonText: { color: COLORS.text, fontSize: 14, fontWeight: "600" },
   rulesCard: {
+    width: "100%",
+    maxWidth: RULES_CONTENT_MAX_WIDTH,
+    alignSelf: "center",
     padding: 22,
     borderRadius: 24,
     backgroundColor: "rgba(255,255,255,0.035)",
@@ -1014,12 +1136,14 @@ const styles = StyleSheet.create({
   trackerTitle: { color: COLORS.white, fontSize: 18, fontWeight: "800" },
   trackerSubtitle: { color: COLORS.muted, fontSize: 12, marginTop: 3 },
   trackerTimerRow: { alignItems: "center", paddingVertical: 14 },
-  trackerGrid: { padding: 16, paddingBottom: 110 },
-  trackerColumn: { gap: 9, marginBottom: 9 },
+  trackerList: {
+    width: "100%",
+    maxWidth: TRACKER_CONTENT_MAX_WIDTH,
+    alignSelf: "center",
+  },
+  trackerGrid: { paddingVertical: 16, paddingBottom: 110 },
+  trackerColumn: { marginBottom: 9, justifyContent: "flex-start" },
   trackerCell: {
-    flex: 1,
-    aspectRatio: 1,
-    maxWidth: 62,
     borderRadius: 13,
     alignItems: "center",
     justifyContent: "center",
@@ -1065,6 +1189,9 @@ const styles = StyleSheet.create({
     paddingVertical: 30,
   },
   resultCard: {
+    width: "100%",
+    maxWidth: RESULT_CONTENT_MAX_WIDTH,
+    alignSelf: "center",
     padding: 22,
     borderRadius: 24,
     backgroundColor: "rgba(255,255,255,0.035)",
@@ -1119,7 +1246,12 @@ const styles = StyleSheet.create({
     marginBottom: 18,
   },
   promoTitle: { color: COLORS.white, fontSize: 16, fontWeight: "800" },
-  promoText: { color: COLORS.muted, fontSize: 13, lineHeight: 20, marginTop: 7 },
+  promoText: {
+    color: COLORS.muted,
+    fontSize: 13,
+    lineHeight: 20,
+    marginTop: 7,
+  },
   promoActions: { gap: 10, marginTop: 15 },
   resultActions: { width: "100%", gap: 10 },
   testHeader: {
@@ -1162,10 +1294,21 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 8,
   },
-  submitBannerText: { flex: 1, color: COLORS.text, fontSize: 12, lineHeight: 17 },
+  submitBannerText: {
+    flex: 1,
+    color: COLORS.text,
+    fontSize: 12,
+    lineHeight: 17,
+  },
   retrySubmitText: { color: COLORS.cyan, fontSize: 12, fontWeight: "800" },
-  questionScrollContent: { flexGrow: 1, padding: 16, paddingBottom: 28 },
+  questionScrollContent: {
+    flexGrow: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
   questionCard: {
+    width: "100%",
+    alignSelf: "center",
     padding: 18,
     borderRadius: 22,
     backgroundColor: "rgba(255,255,255,0.025)",
@@ -1188,10 +1331,14 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     backgroundColor: "rgba(255,255,255,0.04)",
   },
-  questionText: { color: COLORS.white, fontSize: 17, lineHeight: 26, fontWeight: "600" },
+  questionText: {
+    color: COLORS.white,
+    fontSize: 17,
+    lineHeight: 26,
+    fontWeight: "600",
+  },
   questionImage: {
     width: "100%",
-    height: 230,
     borderRadius: 15,
     marginTop: 17,
     backgroundColor: "rgba(255,255,255,0.025)",
@@ -1199,15 +1346,22 @@ const styles = StyleSheet.create({
   optionsList: { gap: 11, marginTop: 20 },
   navigationFooter: {
     minHeight: 72,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
     backgroundColor: COLORS.background,
     borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: COLORS.border,
+    alignItems: "center",
   },
-  footerButtonWrap: { flex: 1 },
-  footerCounter: { color: COLORS.muted, fontSize: 12, minWidth: 46, textAlign: "center" },
+  navigationFooterInner: {
+    width: "100%",
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  footerButtonWrap: { flex: 1, minWidth: 0 },
+  footerCounter: {
+    color: COLORS.muted,
+    fontSize: 12,
+    minWidth: 46,
+    textAlign: "center",
+  },
 });
