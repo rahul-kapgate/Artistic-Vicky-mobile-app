@@ -48,39 +48,51 @@ export default function CourseDashboardScreen() {
       case "resources":
         router.push({
           pathname: "/(app)/course/resources/resources",
-          params: { id: courseId },
+          params: {
+            id: courseId,
+          },
         });
         break;
 
       case "videos":
         router.push({
           pathname: "/(app)/course/videos",
-          params: { id: courseId },
+          params: {
+            id: courseId,
+          },
         });
         break;
 
       case "mock-test":
         router.push({
-          pathname: "/(app)/course/videos/videos",
-          params: { id: courseId },
+          pathname: "/(app)/course/test/[type]/[id]",
+          params: {
+            type: "mock",
+            id: courseId,
+          },
         });
         break;
 
       case "pyq-mock-test":
         router.push({
           pathname: "/(app)/course/pyq-tests",
-          params: { id: courseId },
+          params: {
+            id: courseId,
+          },
         });
         break;
 
       case "live-test":
         router.push({
           pathname: "/(app)/course/live-tests",
-          params: { id: courseId },
+          params: {
+            id: courseId,
+          },
         });
         break;
 
       default:
+        console.warn(`Unknown course section: ${section}`);
         break;
     }
   };
