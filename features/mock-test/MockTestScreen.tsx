@@ -22,6 +22,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import { TestScreenSkeleton } from "@/components/skeletons/TestScreenSkeleton";
 import { useMockTestSession } from "@/features/mock-test/useMockTestSession";
 import type {
   MockTestOption,
@@ -702,7 +703,9 @@ export function MockTestScreen({
 
   const title = type === "mock" ? "Mock Test" : "PYQ Test";
 
-  if (session.questionsLoading) return <LoadingScreen />;
+  if (session.questionsLoading) {
+    return <TestScreenSkeleton />;
+  }
 
   if (session.questionsError) {
     return (

@@ -1,3 +1,4 @@
+import { TestListSkeleton } from "@/components/skeletons/TestListSkeleton";
 import { getCourseById } from "@/services/course.service";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { useQuery } from "@tanstack/react-query";
@@ -6,14 +7,13 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import React from "react";
 import {
-  ActivityIndicator,
   Dimensions,
   Image,
   ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
-  View,
+  View
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -45,17 +45,7 @@ export default function CourseDetailScreen() {
   };
 
   if (isLoading) {
-    return (
-      <SafeAreaView style={styles.center} edges={["top", "bottom"]}>
-        <StatusBar style="light" backgroundColor="#050A1C" />
-
-        <View style={styles.glowTopLeft} />
-        <View style={styles.glowBottomRight} />
-
-        <ActivityIndicator size="large" color="#4CC3FF" />
-        <Text style={styles.loadingText}>Loading course details...</Text>
-      </SafeAreaView>
-    );
+    return <TestListSkeleton grouped cardCount={6} />;
   }
 
   if (isError || !course || !courseId) {

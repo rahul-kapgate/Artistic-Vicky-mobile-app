@@ -1,9 +1,9 @@
 import { Ionicons } from "@expo/vector-icons";
+import { usePreventRemove } from "@react-navigation/native";
 import * as Haptics from "expo-haptics";
 import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
 import { router, useLocalSearchParams, useNavigation } from "expo-router";
-import { usePreventRemove } from "@react-navigation/native";
 import { StatusBar } from "expo-status-bar";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
@@ -22,6 +22,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import { TestScreenSkeleton } from "@/components/skeletons/TestScreenSkeleton";
 import {
   getLiveTestSession,
   getPublicLiveTests,
@@ -33,7 +34,7 @@ import type {
   LiveTestSession,
   PublicLiveTest,
 } from "@/types/live-test";
-import type { MockTestOption, MockTestQuestion } from "@/types/mock-test";
+import type { MockTestOption } from "@/types/mock-test";
 
 const COLORS = {
   background: "#07090F",
@@ -116,10 +117,7 @@ function OptionItem({
       ]}
     >
       <View
-        style={[
-          styles.optionLabel,
-          selected && styles.optionLabelSelected,
-        ]}
+        style={[styles.optionLabel, selected && styles.optionLabelSelected]}
       >
         <Text
           style={[
@@ -194,9 +192,7 @@ export default function LiveTestScreen() {
     answersRef.current = restoredAnswers;
     setAnswers(restoredAnswers);
     setTimeLeft(nextSession.remaining_seconds ?? 0);
-    setServerOffsetMs(
-      new Date(nextSession.server_now).getTime() - Date.now(),
-    );
+    setServerOffsetMs(new Date(nextSession.server_now).getTime() - Date.now());
 
     if (
       nextSession.status === "submitted" ||
@@ -231,7 +227,9 @@ export default function LiveTestScreen() {
       }
 
       const publicTests = await getPublicLiveTests();
-      const found = publicTests.find((item) => Number(item.id) === Number(testId));
+      const found = publicTests.find(
+        (item) => Number(item.id) === Number(testId),
+      );
 
       if (!found) {
         throw new Error("Live test not found or no longer published.");
@@ -298,10 +296,7 @@ export default function LiveTestScreen() {
     const calculate = () => {
       const serverNow = Date.now() + serverOffsetMs;
       const expiresAt = new Date(session.expires_at).getTime();
-      const remaining = Math.max(
-        0,
-        Math.floor((expiresAt - serverNow) / 1000),
-      );
+      const remaining = Math.max(0, Math.floor((expiresAt - serverNow) / 1000));
 
       setTimeLeft(remaining);
 
@@ -344,10 +339,7 @@ export default function LiveTestScreen() {
 
     if (!target) return 0;
 
-    return Math.max(
-      0,
-      Math.floor((new Date(target).getTime() - now) / 1000),
-    );
+    return Math.max(0, Math.floor((new Date(target).getTime() - now) / 1000));
   }, [introState, meta, now]);
 
   const handleStart = async () => {
@@ -358,15 +350,11 @@ export default function LiveTestScreen() {
       const nextSession = await startLiveTest(testId);
       applySession(nextSession);
       autoSubmitRef.current = false;
-      await Haptics.notificationAsync(
-        Haptics.NotificationFeedbackType.Success,
-      );
+      await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     } catch (error: any) {
       Alert.alert(
         "Unable to start test",
-        error?.response?.data?.message ||
-          error?.message ||
-          "Please try again.",
+        error?.response?.data?.message || error?.message || "Please try again.",
       );
     } finally {
       setStarting(false);
@@ -431,15 +419,7 @@ export default function LiveTestScreen() {
   };
 
   if (loading) {
-    return (
-      <SafeAreaView style={styles.safeArea} edges={["top", "bottom"]}>
-        <StatusBar style="light" backgroundColor={COLORS.background} />
-        <View style={styles.centerState}>
-          <ActivityIndicator size="large" color={COLORS.cyan} />
-          <Text style={styles.stateTitle}>Loading live test</Text>
-        </View>
-      </SafeAreaView>
-    );
+    return <TestScreenSkeleton />;
   }
 
   if (screenError || !meta) {
@@ -514,7 +494,11 @@ export default function LiveTestScreen() {
             >
               <View style={styles.introHeader}>
                 <View style={styles.liveIcon}>
-                  <Ionicons name="radio-outline" size={27} color={COLORS.cyan} />
+                  <Ionicons
+                    name="radio-outline"
+                    size={27}
+                    color={COLORS.cyan}
+                  />
                 </View>
 
                 <View style={styles.introHeaderText}>
@@ -681,10 +665,7 @@ export default function LiveTestScreen() {
               color={getTimerColor(timeLeft)}
             />
             <Text
-              style={[
-                styles.timerText,
-                { color: getTimerColor(timeLeft) },
-              ]}
+              style={[styles.timerText, { color: getTimerColor(timeLeft) }]}
             >
               {formatTime(timeLeft)}
             </Text>
@@ -808,7 +789,8 @@ export default function LiveTestScreen() {
             <View>
               <Text style={styles.trackerTitle}>Question Tracker</Text>
               <Text style={styles.trackerSubtitle}>
-                {answeredCount} answered · {questions.length - answeredCount} remaining
+                {answeredCount} answered · {questions.length - answeredCount}{" "}
+                remaining
               </Text>
             </View>
 

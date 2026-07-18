@@ -6,15 +6,15 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import React, { useMemo } from "react";
 import {
-  ActivityIndicator,
   ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
-  View,
+  View
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import { CourseDashboardSkeleton } from "@/components/skeletons/CourseDashboardSkeleton";
 import CourseSectionCard from "./components/CourseSectionCard";
 import SECTION_CONFIG from "./components/sectionConfig";
 
@@ -93,17 +93,7 @@ export default function CourseDashboardScreen() {
   };
 
   if (isLoading) {
-    return (
-      <SafeAreaView style={styles.center} edges={["top", "bottom"]}>
-        <StatusBar style="light" backgroundColor="#050A1C" />
-
-        <View style={styles.glowTopLeft} />
-        <View style={styles.glowBottomRight} />
-
-        <ActivityIndicator size="large" color="#4CC3FF" />
-        <Text style={styles.loadingText}>Loading your course...</Text>
-      </SafeAreaView>
-    );
+    return <CourseDashboardSkeleton />;
   }
 
   if (isError || !course || !courseId) {
