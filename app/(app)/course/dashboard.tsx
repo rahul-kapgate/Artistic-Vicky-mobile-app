@@ -52,12 +52,7 @@ export default function CourseDashboardScreen() {
         break;
 
       case "videos":
-        router.push({
-          pathname: "/(app)/course/videos",
-          params: {
-            id: courseId,
-          },
-        });
+        router.push("/(app)/course/videos");
         break;
 
       case "mock-test":
