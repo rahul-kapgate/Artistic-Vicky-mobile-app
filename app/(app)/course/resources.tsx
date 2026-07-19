@@ -1,25 +1,25 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useQuery } from "@tanstack/react-query";
 import { LinearGradient } from "expo-linear-gradient";
-import { router, useLocalSearchParams } from "expo-router";
+import { router } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { useMemo, useState } from "react";
 import {
-  ActivityIndicator,
-  FlatList,
-  Linking,
-  Pressable,
-  RefreshControl,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  useWindowDimensions,
-  View,
+    ActivityIndicator,
+    FlatList,
+    Linking,
+    Pressable,
+    RefreshControl,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    useWindowDimensions,
+    View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-import { getCourseResources } from "@/services/resource.service";
+import { getAllResources } from "@/services/resource.service";
 import type { CourseResource, ResourceType } from "@/types/resource";
 
 const COLORS = {
@@ -52,10 +52,6 @@ interface ResourceAccent {
   secondary: string;
   soft: string;
   border: string;
-}
-
-function getParam(value?: string | string[]): string | undefined {
-  return Array.isArray(value) ? value[0] : value;
 }
 
 function getResourceIcon(
@@ -205,7 +201,7 @@ function EmptyState({
   const message = search.trim()
     ? `No results found for "${search.trim()}".`
     : selectedType === "All"
-      ? "No study resources are available for this course."
+      ? "No study resources are currently available."
       : `No resources found for ${selectedType}.`;
 
   return (
@@ -311,14 +307,7 @@ function ResourceCard({
           <Ionicons name={icon} size={16} color={accent.primary} />
         </View>
 
-        <Text
-          style={[
-            styles.resourceTypeText,
-            {
-              color: accent.primary,
-            },
-          ]}
-        >
+        <Text style={[styles.resourceTypeText, { color: accent.primary }]}>
           {resource.type}
         </Text>
       </View>
@@ -361,15 +350,7 @@ function ResourceCard({
         ) : null}
       </View>
 
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel={`Open ${resource.title}`}
-        onPress={onPress}
-        style={({ pressed }) => [
-          styles.viewButtonWrapper,
-          pressed && styles.buttonPressed,
-        ]}
-      >
+      <View style={styles.viewButtonWrapper}>
         <LinearGradient
           colors={[accent.primary, accent.secondary]}
           start={{ x: 0, y: 0 }}
@@ -382,20 +363,13 @@ function ResourceCard({
 
           <Ionicons name="arrow-forward" size={16} color={COLORS.white} />
         </LinearGradient>
-      </Pressable>
+      </View>
     </Pressable>
   );
 }
 
-export default function CourseResourcesScreen() {
+export default function ResourcesScreen() {
   const { width, height } = useWindowDimensions();
-
-  const params = useLocalSearchParams<{
-    id?: string | string[];
-    courseId?: string | string[];
-  }>();
-
-  const courseId = getParam(params.courseId) ?? getParam(params.id);
 
   const [selectedType, setSelectedType] = useState<ResourceFilter>("All");
 
@@ -414,11 +388,9 @@ export default function CourseResourcesScreen() {
     refetch,
     isRefetching,
   } = useQuery({
-    queryKey: ["course-resources", courseId],
+    queryKey: ["all-resources"],
 
-    queryFn: () => getCourseResources(courseId!),
-
-    enabled: Boolean(courseId),
+    queryFn: getAllResources,
 
     staleTime: 5 * 60 * 1000,
 
@@ -459,7 +431,9 @@ export default function CourseResourcesScreen() {
       }
 
       const title = resource.title?.toLowerCase() ?? "";
+
       const description = resource.description?.toLowerCase() ?? "";
+
       const fileName = resource.file_name?.toLowerCase() ?? "";
 
       return (
@@ -487,19 +461,6 @@ export default function CourseResourcesScreen() {
       console.error("Failed to open resource:", openError);
     }
   };
-
-  if (!courseId) {
-    return (
-      <SafeAreaView style={styles.safeArea} edges={["top", "bottom"]}>
-        <StatusBar style="light" backgroundColor={COLORS.background} />
-
-        <ErrorState
-          message="The course ID is missing."
-          onRetry={() => router.back()}
-        />
-      </SafeAreaView>
-    );
-  }
 
   return (
     <SafeAreaView style={styles.safeArea} edges={["top", "bottom"]}>
@@ -605,8 +566,8 @@ export default function CourseResourcesScreen() {
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.filtersContent}
             keyboardShouldPersistTaps="handled"
+            contentContainerStyle={styles.filtersContent}
           >
             {RESOURCE_FILTERS.map((filter) => (
               <FilterButton
@@ -948,10 +909,6 @@ const styles = StyleSheet.create({
     color: COLORS.white,
     fontSize: 13,
     fontWeight: "700",
-  },
-
-  buttonPressed: {
-    opacity: 0.82,
   },
 
   loadingList: {

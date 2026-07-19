@@ -47,10 +47,7 @@ export default function CourseDashboardScreen() {
     switch (section) {
       case "resources":
         router.push({
-          pathname: "/(app)/course/resources/[courseId]",
-          params: {
-            courseId: String(course.id),
-          },
+          pathname: "/(app)/course/resources",
         });
         break;
 
