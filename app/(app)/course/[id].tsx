@@ -1,3 +1,5 @@
+import CourseReviews from "@/components/course/CourseReviews";
+import MentorCard from "@/components/course/MentorCard";
 import { TestListSkeleton } from "@/components/skeletons/TestListSkeleton";
 import { getCourseById } from "@/services/course.service";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
@@ -13,7 +15,7 @@ import {
   StyleSheet,
   Text,
   TouchableOpacity,
-  View
+  View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -198,6 +200,20 @@ export default function CourseDetailScreen() {
                 "No description available for this course."}
             </Text>
           </View>
+
+          {/* Student reviews and rating summary */}
+          <CourseReviews courseId={course.id} />
+
+          {/* Mentor information */}
+          <View style={styles.mentorSection}>
+            <MentorCard />
+          </View>
+
+          {/* Enrollment CTA */}
+          <LinearGradient
+            colors={["#111B45", "#0B1028"]}
+            style={styles.ctaCard}
+          ></LinearGradient>
 
           <LinearGradient
             colors={["#111B45", "#0B1028"]}
@@ -485,6 +501,10 @@ const styles = StyleSheet.create({
 
   ctaTextBox: {
     marginBottom: 16,
+  },
+
+  mentorSection: {
+    marginTop: 18,
   },
 
   ctaTitle: {
