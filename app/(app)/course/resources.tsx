@@ -3,21 +3,23 @@ import { useQuery } from "@tanstack/react-query";
 import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
 import { StatusBar } from "expo-status-bar";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
-    ActivityIndicator,
-    FlatList,
-    Linking,
-    Pressable,
-    RefreshControl,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    useWindowDimensions,
-    View,
+  ActivityIndicator,
+  Alert,
+  FlatList,
+  Pressable,
+  RefreshControl,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  useWindowDimensions,
+  View
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+
+import { clearTemporaryResourcePdfs } from "@/services/resource-pdf.service";
 
 import { getAllResources } from "@/services/resource.service";
 import type { CourseResource, ResourceType } from "@/types/resource";
@@ -375,6 +377,10 @@ export default function ResourcesScreen() {
 
   const [search, setSearch] = useState("");
 
+  useEffect(() => {
+    void clearTemporaryResourcePdfs();
+  }, []);
+
   const isTablet = width >= 768;
   const isCompact = width < 360 || height < 700;
 
@@ -444,22 +450,27 @@ export default function ResourcesScreen() {
     });
   }, [resources, search, selectedType]);
 
-  const openResource = async (resource: CourseResource) => {
-    try {
-      if (!resource.file_url) {
-        throw new Error("The resource file URL is unavailable.");
-      }
+  const openResource = (resource: CourseResource) => {
+    const fileName = resource.file_name?.toLowerCase() ?? "";
 
-      const supported = await Linking.canOpenURL(resource.file_url);
+    const isPdf =
+      resource.mime_type === "application/pdf" || fileName.endsWith(".pdf");
 
-      if (!supported) {
-        throw new Error("This resource cannot be opened on this device.");
-      }
-
-      await Linking.openURL(resource.file_url);
-    } catch (openError) {
-      console.error("Failed to open resource:", openError);
+    if (!isPdf) {
+      Alert.alert(
+        "Unsupported resource",
+        "Only PDF resources can currently be opened inside the app.",
+      );
+      return;
     }
+
+    router.push({
+      pathname: "/(app)/course/resource-viewer",
+      params: {
+        id: String(resource.id),
+        title: resource.title || "Resource PDF",
+      },
+    });
   };
 
   return (
