@@ -49,7 +49,7 @@ export default function LandingScreen() {
             {/* Logo */}
             <View style={styles.logoContainer}>
               <Image
-                source={require("../assets/images/av-art.jpeg")}
+                source={require("../assets/images/logo.png")}
                 style={styles.logoImage}
                 resizeMode="contain"
               />

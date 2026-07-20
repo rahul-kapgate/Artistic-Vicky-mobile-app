@@ -1,3 +1,4 @@
+import { HomeScreenSkeleton } from "@/components/skeletons/HomeScreenSkeleton";
 import { getAllCourses } from "@/services/course.service";
 import { getEnrolledCourses, getProfile } from "@/services/user.service";
 import { Course } from "@/types/course";
@@ -50,11 +51,7 @@ export default function HomeScreen() {
   const hasEnrolledCourses = courses.length > 0;
 
   if (profileLoading) {
-    return (
-      <SafeAreaView style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#4CC3FF" />
-      </SafeAreaView>
-    );
+    return <HomeScreenSkeleton />;
   }
 
   if (isError) {
