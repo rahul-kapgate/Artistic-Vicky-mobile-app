@@ -1,4 +1,5 @@
 import { Directory, File, Paths } from "expo-file-system";
+import * as SecureStore from "expo-secure-store";
 
 import { api } from "@/lib/api";
 
@@ -46,11 +47,11 @@ function createTemporaryPdfFile(resourceId: string): File {
 }
 
 /**
- * Assumes the backend route is:
+ * When EXPO_PUBLIC_API_URL is:
+ * http://10.0.2.2:3000/api
  *
- * GET /api/resource/:id/download
- *
- * Change only this function if your actual route is different.
+ * The generated URL becomes:
+ * http://10.0.2.2:3000/api/resource/56/download
  */
 export function getResourceDownloadUrl(resourceId: string | number): string {
   const normalizedId = validateResourceId(resourceId);
@@ -60,26 +61,41 @@ export function getResourceDownloadUrl(resourceId: string | number): string {
 
 export async function downloadResourcePdf(
   resourceId: string | number,
-  headers: Record<string, string> = {},
 ): Promise<string> {
   const normalizedId = validateResourceId(resourceId);
 
   ensureResourcePdfDirectory();
 
   const destinationFile = createTemporaryPdfFile(normalizedId);
+  const accessToken = await SecureStore.getItemAsync("accessToken");
+
+  if (!accessToken) {
+    throw new Error("Your session has expired. Please log in again.");
+  }
+
+  const downloadUrl = getResourceDownloadUrl(normalizedId);
+
+  console.log("[Resource PDF] Download URL:", downloadUrl);
+  console.log("[Resource PDF] Access token available:", Boolean(accessToken));
 
   try {
     const downloadedFile = await File.downloadFileAsync(
-      getResourceDownloadUrl(normalizedId),
+      downloadUrl,
       destinationFile,
       {
         idempotent: true,
         headers: {
           Accept: "application/pdf",
-          ...headers,
+          Authorization: `Bearer ${accessToken}`,
         },
       },
     );
+
+    console.log("[Resource PDF] Download completed:", {
+      uri: downloadedFile.uri,
+      exists: downloadedFile.exists,
+      size: downloadedFile.size,
+    });
 
     if (!downloadedFile.exists || downloadedFile.size <= 0) {
       throw new Error("The downloaded PDF is empty.");
@@ -87,20 +103,21 @@ export async function downloadResourcePdf(
 
     return downloadedFile.uri;
   } catch (error) {
-    /*
-     * Android may leave a partially downloaded file when a
-     * network download fails, so remove it here.
-     */
+    console.error("[Resource PDF] Download failed:", error);
+
     try {
       if (destinationFile.exists) {
         destinationFile.delete();
       }
     } catch (cleanupError) {
-      console.warn("Could not remove partial PDF:", cleanupError);
+      console.warn(
+        "[Resource PDF] Could not remove partial PDF:",
+        cleanupError,
+      );
     }
 
     if (error instanceof Error) {
-      throw error;
+      throw new Error(`Unable to download PDF: ${error.message}`);
     }
 
     throw new Error("Unable to download this resource.");
@@ -125,9 +142,6 @@ export async function deleteTemporaryResourcePdf(
   }
 }
 
-/**
- * Removes files left behind after an app crash or force-stop.
- */
 export async function clearTemporaryResourcePdfs(): Promise<void> {
   try {
     if (RESOURCE_PDF_DIRECTORY.exists) {

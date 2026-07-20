@@ -3,19 +3,19 @@ import { router, useLocalSearchParams } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
-    ActivityIndicator,
-    AppState,
-    Pressable,
-    StyleSheet,
-    Text,
-    View,
+  ActivityIndicator,
+  AppState,
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
 } from "react-native";
 import Pdf from "react-native-pdf";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import {
-    deleteTemporaryResourcePdf,
-    downloadResourcePdf,
+  deleteTemporaryResourcePdf,
+  downloadResourcePdf,
 } from "@/services/resource-pdf.service";
 
 const COLORS = {
@@ -102,18 +102,7 @@ export default function ResourceViewerScreen() {
       setRenderError(null);
 
       try {
-        /*
-         * Add authentication headers here if your endpoint
-         * requires them.
-         */
-        const downloadedUri = await downloadResourcePdf(resourceId, {
-          /*
-           * Example:
-           *
-           * Authorization: `Bearer ${token}`,
-           * "x-api-key": apiKey,
-           */
-        });
+        const downloadedUri = await downloadResourcePdf(resourceId);
 
         if (cancelled || !mountedRef.current) {
           await deleteTemporaryResourcePdf(downloadedUri);
