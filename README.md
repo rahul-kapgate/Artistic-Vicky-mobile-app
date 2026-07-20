@@ -1,6 +1,6 @@
 # 🎨 Artistic Vicky Mobile App
 
-A beautiful mobile companion to [Artistic Vicky](https://artisticvickey.in/) — bringing art and creativity to your pocket.
+A beautiful mobile companion to [Artistic Vickey](https://artisticvickey.in/) — bringing art and creativity to your pocket.
 
 ## What's Inside?
 
@@ -20,6 +20,7 @@ npx expo start
 ```
 
 Choose your platform:
+
 - 📲 **Expo Go** - Test instantly on your phone
 - 🤖 **Android Emulator** - Full Android testing
 - 🍎 **iOS Simulator** - Full iOS testing
