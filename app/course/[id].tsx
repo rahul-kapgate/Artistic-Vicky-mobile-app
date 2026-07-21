@@ -2,6 +2,7 @@ import CourseReviews from "@/components/course/CourseReviews";
 import MentorCard from "@/components/course/MentorCard";
 import { TestListSkeleton } from "@/components/skeletons/TestListSkeleton";
 import { getCourseById } from "@/services/course.service";
+import { Course } from "@/types/course";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { useQuery } from "@tanstack/react-query";
 import { LinearGradient } from "expo-linear-gradient";
@@ -24,33 +25,54 @@ const CARD_WIDTH = (width - 56) / 2;
 
 export default function CourseDetailScreen() {
   const router = useRouter();
-  const { id } = useLocalSearchParams<{ id?: string | string[] }>();
+
+  const { id } = useLocalSearchParams<{
+    id?: string | string[];
+  }>();
 
   const courseId = Array.isArray(id) ? id[0] : id;
 
+  /*
+   * Fetch course details only after enrollment has been confirmed.
+   */
   const {
     data: course,
-    isLoading,
-    isError,
-    refetch,
-  } = useQuery({
-    queryKey: ["course", courseId],
+    isLoading: courseLoading,
+    isError: courseError,
+    refetch: refetchCourse,
+  } = useQuery<Course>({
+    queryKey: ["public-course-detail", courseId],
     queryFn: () => getCourseById(courseId!),
     enabled: !!courseId,
   });
 
-  const handleEnrollPress = () => {
-    // Replace this with your actual enroll/payment API or route.
-    // Example:
-    // router.push({ pathname: "/(app)/course/payment", params: { id: courseId } });
-    console.log("Enroll course:", courseId);
+  const handleContinueLearning = () => {
+    if (!courseId) {
+      return;
+    }
+
+    router.push({
+      pathname: "/(app)/course/dashboard",
+      params: {
+        id: String(courseId),
+      },
+    });
   };
+
+  const handleGoToMyCourses = () => {
+    router.replace("/(app)/home");
+  };
+
+  const isLoading = courseLoading;
 
   if (isLoading) {
     return <TestListSkeleton grouped cardCount={6} />;
   }
 
-  if (isError || !course || !courseId) {
+  /*
+   * Invalid or missing route parameter.
+   */
+  if (!courseId) {
     return (
       <SafeAreaView style={styles.center} edges={["top", "bottom"]}>
         <StatusBar style="light" backgroundColor="#050A1C" />
@@ -59,16 +81,45 @@ export default function CourseDetailScreen() {
           <Ionicons name="alert-circle-outline" size={42} color="#FF6B9A" />
         </View>
 
-        <Text style={styles.errorTitle}>Course not found 1</Text>
+        <Text style={styles.errorTitle}>Invalid course</Text>
 
         <Text style={styles.errorDescription}>
-          We couldn’t load this course. Please try again.
+          The selected course could not be identified.
         </Text>
 
         <TouchableOpacity
           activeOpacity={0.85}
           style={styles.retryButton}
-          onPress={() => refetch()}
+          onPress={handleGoToMyCourses}
+        >
+          <Text style={styles.retryText}>Go to My Courses</Text>
+        </TouchableOpacity>
+      </SafeAreaView>
+    );
+  }
+
+  /*
+   * Course detail request failed.
+   */
+  if (courseError || !course) {
+    return (
+      <SafeAreaView style={styles.center} edges={["top", "bottom"]}>
+        <StatusBar style="light" backgroundColor="#050A1C" />
+
+        <View style={styles.errorIconBox}>
+          <Ionicons name="alert-circle-outline" size={42} color="#FF6B9A" />
+        </View>
+
+        <Text style={styles.errorTitle}>Course not found</Text>
+
+        <Text style={styles.errorDescription}>
+          We couldn&apos;t load this course. Please try again.
+        </Text>
+
+        <TouchableOpacity
+          activeOpacity={0.85}
+          style={styles.retryButton}
+          onPress={() => refetchCourse()}
         >
           <Text style={styles.retryText}>Retry</Text>
         </TouchableOpacity>
@@ -76,13 +127,20 @@ export default function CourseDetailScreen() {
         <TouchableOpacity
           activeOpacity={0.85}
           style={styles.backTextButton}
-          onPress={() => router.back()}
+          onPress={handleGoToMyCourses}
         >
-          <Text style={styles.backText}>Go Back</Text>
+          <Text style={styles.backText}>View My Courses</Text>
         </TouchableOpacity>
       </SafeAreaView>
     );
   }
+
+  const courseType =
+    course.course_type === "masterclass"
+      ? "Masterclass"
+      : course.course_type === "regular"
+        ? "Regular Course"
+        : "Online";
 
   return (
     <SafeAreaView style={styles.container} edges={["top", "bottom"]}>
@@ -96,8 +154,13 @@ export default function CourseDetailScreen() {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
       >
+        {/* Course hero */}
         <View style={styles.heroContainer}>
-          <Image source={{ uri: course.image }} style={styles.heroImage} />
+          <Image
+            source={{ uri: course.image }}
+            style={styles.heroImage}
+            resizeMode="cover"
+          />
 
           <LinearGradient
             colors={["rgba(5,10,28,0.18)", "rgba(5,10,28,0.45)", "#050A1C"]}
@@ -114,12 +177,11 @@ export default function CourseDetailScreen() {
               <Ionicons name="arrow-back" size={22} color="#FFFFFF" />
             </TouchableOpacity>
 
-            <LinearGradient
-              colors={["#22C55E", "#16A34A"]}
-              style={styles.priceBadge}
-            >
-              <Text style={styles.priceText}>₹{course.price}</Text>
-            </LinearGradient>
+            <View style={styles.enrolledBadge}>
+              <View style={styles.enrolledDot} />
+
+              <Text style={styles.enrolledBadgeText}>ENROLLED</Text>
+            </View>
           </View>
 
           <View style={styles.titleContainer}>
@@ -130,6 +192,7 @@ export default function CourseDetailScreen() {
                   size={15}
                   color="#33D6FF"
                 />
+
                 <Text style={styles.categoryPillText}>{course.category}</Text>
               </View>
             )}
@@ -137,19 +200,22 @@ export default function CourseDetailScreen() {
             <Text style={styles.title}>{course.course_name}</Text>
 
             <Text style={styles.heroSubtitle}>
-              Learn with structured content, expert guidance, and practice-based
-              preparation.
+              Continue learning with structured content, expert guidance and
+              practice-based preparation.
             </Text>
           </View>
         </View>
 
         <View style={styles.content}>
+          {/* Course information */}
           <View style={styles.infoGrid}>
             <View style={styles.infoCard}>
               <View style={styles.infoIconBox}>
                 <Ionicons name="time-outline" size={23} color="#4CC3FF" />
               </View>
+
               <Text style={styles.infoLabel}>Duration</Text>
+
               <Text numberOfLines={2} style={styles.infoValue}>
                 {course.duration || "N/A"}
               </Text>
@@ -159,7 +225,9 @@ export default function CourseDetailScreen() {
               <View style={styles.infoIconBox}>
                 <Ionicons name="language-outline" size={23} color="#4CC3FF" />
               </View>
+
               <Text style={styles.infoLabel}>Language</Text>
+
               <Text numberOfLines={2} style={styles.infoValue}>
                 {course.language || "N/A"}
               </Text>
@@ -169,7 +237,9 @@ export default function CourseDetailScreen() {
               <View style={styles.ratingIconBox}>
                 <Ionicons name="star" size={23} color="#FFD700" />
               </View>
+
               <Text style={styles.infoLabel}>Rating</Text>
+
               <Text numberOfLines={2} style={styles.infoValue}>
                 {course.rating || "N/A"}
               </Text>
@@ -179,17 +249,24 @@ export default function CourseDetailScreen() {
               <View style={styles.infoIconBox}>
                 <Ionicons name="school-outline" size={23} color="#4CC3FF" />
               </View>
+
               <Text style={styles.infoLabel}>Course Type</Text>
+
               <Text numberOfLines={2} style={styles.infoValue}>
-                Online
+                {courseType}
               </Text>
             </View>
           </View>
 
+          {/* About course */}
           <View style={styles.card}>
             <View style={styles.cardHeader}>
               <View style={styles.headingIconBox}>
-                <Ionicons name="document-text-outline" size={22} color="#fff" />
+                <Ionicons
+                  name="document-text-outline"
+                  size={22}
+                  color="#FFFFFF"
+                />
               </View>
 
               <Text style={styles.heading}>About this Course</Text>
@@ -201,7 +278,7 @@ export default function CourseDetailScreen() {
             </Text>
           </View>
 
-          {/* Student reviews and rating summary */}
+          {/* Student reviews */}
           <CourseReviews courseId={course.id} />
 
           {/* Mentor information */}
@@ -209,26 +286,22 @@ export default function CourseDetailScreen() {
             <MentorCard />
           </View>
 
-          {/* Enrollment CTA */}
-          <LinearGradient
-            colors={["#111B45", "#0B1028"]}
-            style={styles.ctaCard}
-          ></LinearGradient>
-
+          {/* Continue learning */}
           <LinearGradient
             colors={["#111B45", "#0B1028"]}
             style={styles.ctaCard}
           >
             <View style={styles.ctaTextBox}>
-              <Text style={styles.ctaTitle}>Ready to start learning?</Text>
+              <Text style={styles.ctaTitle}>Continue your learning</Text>
 
               <Text style={styles.ctaSubtitle}>
-                Enroll now and begin your creative preparation journey.
+                Open your course dashboard and continue from your enrolled
+                lessons.
               </Text>
             </View>
 
             <LinearGradient
-              colors={["#FF3FA7", "#7C3AED", "#33D6FF"]}
+              colors={["#2563EB", "#7C3AED", "#33D6FF"]}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 0 }}
               style={styles.enrollGradient}
@@ -236,9 +309,10 @@ export default function CourseDetailScreen() {
               <TouchableOpacity
                 activeOpacity={0.85}
                 style={styles.enrollButton}
-                onPress={handleEnrollPress}
+                onPress={handleContinueLearning}
               >
-                <Text style={styles.enrollButtonText}>Enroll Now</Text>
+                <Text style={styles.enrollButtonText}>Continue Learning</Text>
+
                 <Ionicons name="arrow-forward" size={19} color="#FFFFFF" />
               </TouchableOpacity>
             </LinearGradient>
@@ -297,13 +371,6 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(51, 214, 255, 0.12)",
   },
 
-  loadingText: {
-    color: "#AAB2CC",
-    marginTop: 14,
-    fontSize: 15,
-    fontWeight: "600",
-  },
-
   heroContainer: {
     height: 360,
     position: "relative",
@@ -340,18 +407,30 @@ const styles = StyleSheet.create({
     borderColor: "rgba(255,255,255,0.12)",
   },
 
-  priceBadge: {
-    paddingHorizontal: 16,
+  enrolledBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 14,
     paddingVertical: 9,
     borderRadius: 999,
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.16)",
+    borderColor: "rgba(34,197,94,0.35)",
+    backgroundColor: "rgba(5,10,28,0.78)",
   },
 
-  priceText: {
-    color: "#FFFFFF",
+  enrolledDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 8,
+    marginRight: 8,
+    backgroundColor: "#22C55E",
+  },
+
+  enrolledBadgeText: {
+    color: "#BBF7D0",
+    fontSize: 11,
     fontWeight: "900",
-    fontSize: 16,
+    letterSpacing: 0.8,
   },
 
   titleContainer: {
@@ -491,6 +570,10 @@ const styles = StyleSheet.create({
     lineHeight: 27,
   },
 
+  mentorSection: {
+    marginTop: 18,
+  },
+
   ctaCard: {
     borderRadius: 24,
     padding: 18,
@@ -501,10 +584,6 @@ const styles = StyleSheet.create({
 
   ctaTextBox: {
     marginBottom: 16,
-  },
-
-  mentorSection: {
-    marginTop: 18,
   },
 
   ctaTitle: {
@@ -562,11 +641,22 @@ const styles = StyleSheet.create({
     marginBottom: 18,
   },
 
+  lockIconBox: {
+    width: 78,
+    height: 78,
+    borderRadius: 39,
+    backgroundColor: "rgba(76, 195, 255, 0.12)",
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 18,
+  },
+
   errorTitle: {
     color: "#FFFFFF",
     fontSize: 22,
     fontWeight: "900",
     marginBottom: 8,
+    textAlign: "center",
   },
 
   errorDescription: {

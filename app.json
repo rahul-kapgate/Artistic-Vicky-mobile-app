@@ -4,7 +4,7 @@
     "slug": "artisticvickey",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/app-icon.png",
+    "icon": "./assets/images/app-icon-one.png",
     "scheme": "artisticvickymobile",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,

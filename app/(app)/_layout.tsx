@@ -1,16 +1,17 @@
-import { Redirect } from "expo-router";
+import { Redirect, Stack } from "expo-router";
 import * as SecureStore from "expo-secure-store";
 import React, { useEffect, useState } from "react";
 import { ActivityIndicator, StyleSheet, View } from "react-native";
 
-export default function Index() {
+export default function ProtectedAppLayout() {
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
+
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   useEffect(() => {
     let isMounted = true;
 
-    const bootstrap = async () => {
+    const checkAuthentication = async () => {
       try {
         const token = await SecureStore.getItemAsync("accessToken");
 
@@ -18,7 +19,7 @@ export default function Index() {
           setIsAuthenticated(Boolean(token));
         }
       } catch (error) {
-        console.error("Authentication bootstrap failed:", error);
+        console.error("Protected route authentication failed:", error);
 
         if (isMounted) {
           setIsAuthenticated(false);
@@ -30,7 +31,7 @@ export default function Index() {
       }
     };
 
-    bootstrap();
+    checkAuthentication();
 
     return () => {
       isMounted = false;
@@ -45,11 +46,21 @@ export default function Index() {
     );
   }
 
-  if (isAuthenticated) {
-    return <Redirect href="/(app)/home" />;
+  if (!isAuthenticated) {
+    return <Redirect href="/(auth)/login" />;
   }
 
-  return <Redirect href="/landing" />;
+  return (
+    <Stack
+      screenOptions={{
+        headerShown: false,
+        animation: "fade",
+        contentStyle: {
+          backgroundColor: "#050A1C",
+        },
+      }}
+    />
+  );
 }
 
 const styles = StyleSheet.create({

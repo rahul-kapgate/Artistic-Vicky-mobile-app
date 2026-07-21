@@ -4,19 +4,19 @@ import { router } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { useCallback, useMemo, useRef, useState } from "react";
 import {
-    ActivityIndicator,
-    FlatList,
-    Pressable,
-    RefreshControl,
-    StyleSheet,
-    Text,
-    TextInput,
-    useWindowDimensions,
-    View
+  ActivityIndicator,
+  FlatList,
+  Pressable,
+  RefreshControl,
+  StyleSheet,
+  Text,
+  TextInput,
+  useWindowDimensions,
+  View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import YoutubePlayer, {
-    type YoutubeIframeRef,
+  type YoutubeIframeRef,
 } from "react-native-youtube-iframe";
 
 import { getVideoSections } from "@/services/video.service";

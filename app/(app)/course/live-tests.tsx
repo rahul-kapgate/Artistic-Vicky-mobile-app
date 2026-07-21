@@ -131,11 +131,7 @@ function LiveTestCard({
         </View>
 
         <View style={styles.metaItem}>
-          <Ionicons
-            name="help-circle-outline"
-            size={15}
-            color={COLORS.muted}
-          />
+          <Ionicons name="help-circle-outline" size={15} color={COLORS.muted} />
           <Text style={styles.metaText}>{test.total_questions} questions</Text>
         </View>
       </View>
@@ -165,11 +161,7 @@ function LiveTestCard({
               : "View details"}
         </Text>
 
-        <Ionicons
-          name="chevron-forward"
-          size={18}
-          color={COLORS.cyanStrong}
-        />
+        <Ionicons name="chevron-forward" size={18} color={COLORS.cyanStrong} />
       </View>
     </Pressable>
   );
