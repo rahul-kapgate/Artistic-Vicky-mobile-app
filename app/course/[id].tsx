@@ -7,6 +7,7 @@ import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { useQuery } from "@tanstack/react-query";
 import { LinearGradient } from "expo-linear-gradient";
 import { useLocalSearchParams, useRouter } from "expo-router";
+import * as SecureStore from "expo-secure-store";
 import { StatusBar } from "expo-status-bar";
 import React from "react";
 import {
@@ -31,6 +32,18 @@ export default function CourseDetailScreen() {
   }>();
 
   const courseId = Array.isArray(id) ? id[0] : id;
+
+  const [isAuthenticated, setIsAuthenticated] = React.useState(false);
+
+  React.useEffect(() => {
+    const checkToken = async () => {
+      const token = await SecureStore.getItemAsync("accessToken");
+
+      setIsAuthenticated(Boolean(token));
+    };
+
+    checkToken();
+  }, []);
 
   /*
    * Fetch course details only after enrollment has been confirmed.
@@ -68,6 +81,45 @@ export default function CourseDetailScreen() {
   if (isLoading) {
     return <TestListSkeleton grouped cardCount={6} />;
   }
+
+  const handleCourseAction = async () => {
+    if (!courseId) {
+      return;
+    }
+
+    try {
+      const token = await SecureStore.getItemAsync("accessToken");
+
+      if (!token) {
+        router.push({
+          pathname: "/(auth)/login",
+          params: {
+            redirectTo: "course-dashboard",
+            courseId: String(courseId),
+          },
+        });
+
+        return;
+      }
+
+      router.push({
+        pathname: "/(app)/course/dashboard",
+        params: {
+          id: String(courseId),
+        },
+      });
+    } catch (error) {
+      console.error("Unable to check authentication:", error);
+
+      router.push({
+        pathname: "/(auth)/login",
+        params: {
+          redirectTo: "course-dashboard",
+          courseId: String(courseId),
+        },
+      });
+    }
+  };
 
   /*
    * Invalid or missing route parameter.
@@ -176,12 +228,6 @@ export default function CourseDetailScreen() {
             >
               <Ionicons name="arrow-back" size={22} color="#FFFFFF" />
             </TouchableOpacity>
-
-            <View style={styles.enrolledBadge}>
-              <View style={styles.enrolledDot} />
-
-              <Text style={styles.enrolledBadgeText}>ENROLLED</Text>
-            </View>
           </View>
 
           <View style={styles.titleContainer}>
@@ -309,9 +355,11 @@ export default function CourseDetailScreen() {
               <TouchableOpacity
                 activeOpacity={0.85}
                 style={styles.enrollButton}
-                onPress={handleContinueLearning}
+                onPress={handleCourseAction}
               >
-                <Text style={styles.enrollButtonText}>Continue Learning</Text>
+                <Text style={styles.enrollButtonText}>
+                  {isAuthenticated ? "Continue Learning" : "Login to Continue"}
+                </Text>
 
                 <Ionicons name="arrow-forward" size={19} color="#FFFFFF" />
               </TouchableOpacity>
