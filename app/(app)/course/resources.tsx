@@ -10,7 +10,6 @@ import {
   FlatList,
   Pressable,
   RefreshControl,
-  ScrollView,
   StyleSheet,
   Text,
   TextInput,
@@ -20,34 +19,54 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { clearTemporaryResourcePdfs } from "@/services/resource-pdf.service";
-
 import { getAllResources } from "@/services/resource.service";
 import type { CourseResource, ResourceType } from "@/types/resource";
 
 const COLORS = {
-  background: "#0A0F1E",
-  card: "rgba(255,255,255,0.04)",
-  cardPressed: "rgba(255,255,255,0.07)",
+  background: "#050A1C",
+  surface: "#0D1633",
+  surfaceElevated: "#101B3D",
+  surfaceSoft: "rgba(255,255,255,0.045)",
+  surfacePressed: "rgba(255,255,255,0.075)",
   white: "#FFFFFF",
-  text: "#F3F4F6",
-  muted: "#9CA3AF",
-  mutedDark: "#6B7280",
-  cyan: "#22D3EE",
-  border: "rgba(255,255,255,0.07)",
-  borderStrong: "rgba(255,255,255,0.14)",
+  text: "#EAF0FF",
+  muted: "#9BA7C2",
+  mutedDark: "#6F7B98",
+  cyan: "#4CC3FF",
+  cyanBright: "#33D6FF",
+  cyanSoft: "rgba(76,195,255,0.11)",
+  cyanBorder: "rgba(76,195,255,0.21)",
+  violet: "#A78BFA",
+  green: "#34D399",
   danger: "#FB7185",
-  searchBackground: "rgba(255,255,255,0.05)",
+  border: "rgba(255,255,255,0.08)",
+  borderStrong: "rgba(255,255,255,0.15)",
 };
 
 const RESOURCE_FILTERS = [
-  "All",
-  "Notes",
-  "E-books",
-  "PYQ",
-  "Sessions",
+  {
+    label: "All",
+    icon: "grid-outline",
+  },
+  {
+    label: "Notes",
+    icon: "document-text-outline",
+  },
+  {
+    label: "E-books",
+    icon: "book-outline",
+  },
+  {
+    label: "PYQ",
+    icon: "reader-outline",
+  },
+  {
+    label: "Sessions",
+    icon: "videocam-outline",
+  },
 ] as const;
 
-type ResourceFilter = (typeof RESOURCE_FILTERS)[number];
+type ResourceFilter = (typeof RESOURCE_FILTERS)[number]["label"];
 
 interface ResourceAccent {
   primary: string;
@@ -84,7 +103,7 @@ function getResourceAccent(type: ResourceType | string): ResourceAccent {
         primary: "#FBBF24",
         secondary: "#F97316",
         soft: "rgba(251,191,36,0.12)",
-        border: "rgba(251,191,36,0.22)",
+        border: "rgba(251,191,36,0.23)",
       };
 
     case "E-books":
@@ -92,7 +111,7 @@ function getResourceAccent(type: ResourceType | string): ResourceAccent {
         primary: "#34D399",
         secondary: "#14B8A6",
         soft: "rgba(52,211,153,0.12)",
-        border: "rgba(52,211,153,0.22)",
+        border: "rgba(52,211,153,0.23)",
       };
 
     case "PYQ":
@@ -100,7 +119,7 @@ function getResourceAccent(type: ResourceType | string): ResourceAccent {
         primary: "#FB7185",
         secondary: "#EC4899",
         soft: "rgba(251,113,133,0.12)",
-        border: "rgba(251,113,133,0.22)",
+        border: "rgba(251,113,133,0.23)",
       };
 
     case "Sessions":
@@ -108,20 +127,24 @@ function getResourceAccent(type: ResourceType | string): ResourceAccent {
         primary: "#A78BFA",
         secondary: "#8B5CF6",
         soft: "rgba(167,139,250,0.12)",
-        border: "rgba(167,139,250,0.22)",
+        border: "rgba(167,139,250,0.23)",
       };
 
     default:
       return {
-        primary: "#22D3EE",
+        primary: COLORS.cyanBright,
         secondary: "#3B82F6",
-        soft: "rgba(34,211,238,0.12)",
-        border: "rgba(34,211,238,0.22)",
+        soft: COLORS.cyanSoft,
+        border: COLORS.cyanBorder,
       };
   }
 }
 
-function formatDate(dateValue: string): string {
+function formatDate(dateValue?: string): string {
+  if (!dateValue) {
+    return "";
+  }
+
   const date = new Date(dateValue);
 
   if (Number.isNaN(date.getTime())) {
@@ -135,28 +158,48 @@ function formatDate(dateValue: string): string {
   });
 }
 
+function isPdfResource(resource: CourseResource): boolean {
+  const fileName = resource.file_name?.toLowerCase() ?? "";
+
+  return resource.mime_type === "application/pdf" || fileName.endsWith(".pdf");
+}
+
 function LoadingCard() {
   return (
     <View style={styles.skeletonCard}>
-      <View style={styles.skeletonTypeRow}>
+      <View style={styles.skeletonTopRow}>
         <View style={styles.skeletonIcon} />
-        <View style={styles.skeletonType} />
+        <View style={styles.skeletonBadge} />
       </View>
 
       <View style={styles.skeletonTitle} />
       <View style={styles.skeletonDescription} />
       <View style={styles.skeletonDescriptionShort} />
-      <View style={styles.skeletonDate} />
-      <View style={styles.skeletonButton} />
+
+      <View style={styles.skeletonBottomRow}>
+        <View style={styles.skeletonMeta} />
+        <View style={styles.skeletonAction} />
+      </View>
     </View>
   );
 }
 
-function LoadingState() {
+function LoadingState({ columns }: { columns: number }) {
+  const loadingItems = Array.from({
+    length: columns === 2 ? 6 : 5,
+  });
+
   return (
-    <View style={styles.loadingList}>
-      {Array.from({ length: 5 }).map((_, index) => (
-        <LoadingCard key={index} />
+    <View
+      style={[styles.loadingGrid, columns === 2 && styles.loadingGridTablet]}
+    >
+      {loadingItems.map((_, index) => (
+        <View
+          key={index}
+          style={columns === 2 ? styles.loadingColumn : undefined}
+        >
+          <LoadingCard />
+        </View>
       ))}
     </View>
   );
@@ -171,8 +214,12 @@ function ErrorState({
 }) {
   return (
     <View style={styles.centerState}>
-      <View style={styles.stateIconContainer}>
-        <Ionicons name="warning-outline" size={32} color={COLORS.danger} />
+      <View style={styles.errorIconContainer}>
+        <Ionicons
+          name="cloud-offline-outline"
+          size={36}
+          color={COLORS.danger}
+        />
       </View>
 
       <Text style={styles.stateTitle}>Unable to load resources</Text>
@@ -185,7 +232,7 @@ function ErrorState({
         onPress={onRetry}
         style={({ pressed }) => [styles.retryButton, pressed && styles.pressed]}
       >
-        <Ionicons name="refresh-outline" size={17} color={COLORS.white} />
+        <Ionicons name="refresh-outline" size={18} color={COLORS.background} />
 
         <Text style={styles.retryButtonText}>Try Again</Text>
       </Pressable>
@@ -196,36 +243,57 @@ function ErrorState({
 function EmptyState({
   search,
   selectedType,
+  onClear,
 }: {
   search: string;
   selectedType: ResourceFilter;
+  onClear: () => void;
 }) {
   const message = search.trim()
     ? `No results found for "${search.trim()}".`
     : selectedType === "All"
       ? "No study resources are currently available."
-      : `No resources found for ${selectedType}.`;
+      : `No resources found in ${selectedType}.`;
+
+  const hasActiveFilter = search.trim().length > 0 || selectedType !== "All";
 
   return (
     <View style={styles.centerState}>
-      <View style={styles.stateIconContainer}>
-        <Ionicons name="documents-outline" size={34} color={COLORS.mutedDark} />
+      <View style={styles.emptyIconContainer}>
+        <Ionicons name="folder-open-outline" size={37} color={COLORS.cyan} />
       </View>
 
       <Text style={styles.stateTitle}>No resources found</Text>
 
       <Text style={styles.stateDescription}>{message}</Text>
+
+      {hasActiveFilter ? (
+        <Pressable
+          accessibilityRole="button"
+          onPress={onClear}
+          style={({ pressed }) => [
+            styles.clearFiltersButton,
+            pressed && styles.pressed,
+          ]}
+        >
+          <Ionicons name="options-outline" size={17} color={COLORS.cyan} />
+
+          <Text style={styles.clearFiltersText}>Clear filters</Text>
+        </Pressable>
+      ) : null}
     </View>
   );
 }
 
 function FilterButton({
   filter,
+  icon,
   active,
   count,
   onPress,
 }: {
   filter: ResourceFilter;
+  icon: keyof typeof Ionicons.glyphMap;
   active: boolean;
   count: number;
   onPress: () => void;
@@ -241,6 +309,12 @@ function FilterButton({
         pressed && styles.pressed,
       ]}
     >
+      <Ionicons
+        name={icon}
+        size={15}
+        color={active ? COLORS.white : COLORS.muted}
+      />
+
       <Text
         style={[
           styles.filterButtonText,
@@ -250,12 +324,45 @@ function FilterButton({
         {filter}
       </Text>
 
-      <Text
-        style={[styles.filterCountText, active && styles.filterCountTextActive]}
+      <View
+        style={[
+          styles.filterCountBadge,
+          active && styles.filterCountBadgeActive,
+        ]}
       >
-        {count}
-      </Text>
+        <Text
+          style={[
+            styles.filterCountText,
+            active && styles.filterCountTextActive,
+          ]}
+        >
+          {count}
+        </Text>
+      </View>
     </Pressable>
+  );
+}
+
+function SummaryStat({
+  icon,
+  value,
+  label,
+}: {
+  icon: keyof typeof Ionicons.glyphMap;
+  value: string | number;
+  label: string;
+}) {
+  return (
+    <View style={styles.summaryStat}>
+      <View style={styles.summaryStatIcon}>
+        <Ionicons name={icon} size={18} color={COLORS.cyan} />
+      </View>
+
+      <View style={styles.summaryStatContent}>
+        <Text style={styles.summaryStatValue}>{value}</Text>
+        <Text style={styles.summaryStatLabel}>{label}</Text>
+      </View>
+    </View>
   );
 }
 
@@ -271,6 +378,7 @@ function ResourceCard({
   const accent = getResourceAccent(resource.type);
   const icon = getResourceIcon(resource.type);
   const formattedDate = formatDate(resource.created_at);
+  const pdfResource = isPdfResource(resource);
 
   return (
     <Pressable
@@ -290,35 +398,82 @@ function ResourceCard({
           accent.secondary,
           "transparent",
         ]}
-        locations={[0, 0.2, 0.8, 1]}
+        locations={[0, 0.18, 0.82, 1]}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 0 }}
         style={styles.cardAccentLine}
       />
 
-      <View style={styles.resourceTypeRow}>
+      <View style={styles.resourceCardTop}>
         <View
           style={[
-            styles.resourceTypeIcon,
+            styles.resourceIconLarge,
             {
               backgroundColor: accent.soft,
               borderColor: accent.border,
             },
           ]}
         >
-          <Ionicons name={icon} size={16} color={accent.primary} />
+          <Ionicons name={icon} size={23} color={accent.primary} />
         </View>
 
-        <Text style={[styles.resourceTypeText, { color: accent.primary }]}>
-          {resource.type}
-        </Text>
+        <View style={styles.resourceBadgeColumn}>
+          <View
+            style={[
+              styles.resourceTypeBadge,
+              {
+                backgroundColor: accent.soft,
+                borderColor: accent.border,
+              },
+            ]}
+          >
+            <Text
+              style={[
+                styles.resourceTypeText,
+                {
+                  color: accent.primary,
+                },
+              ]}
+            >
+              {resource.type}
+            </Text>
+          </View>
+
+          <View
+            style={[
+              styles.fileStatusBadge,
+              pdfResource ? styles.fileStatusPdf : styles.fileStatusUnsupported,
+            ]}
+          >
+            <Ionicons
+              name={
+                pdfResource
+                  ? "checkmark-circle-outline"
+                  : "information-circle-outline"
+              }
+              size={12}
+              color={pdfResource ? COLORS.green : COLORS.muted}
+            />
+
+            <Text
+              style={[
+                styles.fileStatusText,
+                {
+                  color: pdfResource ? COLORS.green : COLORS.muted,
+                },
+              ]}
+            >
+              {pdfResource ? "PDF" : "Preview only"}
+            </Text>
+          </View>
+        </View>
       </View>
 
       <Text style={styles.resourceTitle} numberOfLines={2}>
         {resource.title}
       </Text>
 
-      <Text style={styles.resourceDescription} numberOfLines={2}>
+      <Text style={styles.resourceDescription} numberOfLines={3}>
         {resource.description?.trim() || "No description provided."}
       </Text>
 
@@ -331,39 +486,51 @@ function ResourceCard({
               color={COLORS.mutedDark}
             />
 
-            <Text style={styles.resourceDate}>{formattedDate}</Text>
+            <Text style={styles.metadataText}>{formattedDate}</Text>
           </View>
         ) : null}
 
-        {resource.mime_type ? (
+        {resource.file_name ? (
           <View style={styles.metadataItem}>
             <Ionicons
-              name="document-outline"
+              name="document-attach-outline"
               size={13}
               color={COLORS.mutedDark}
             />
 
-            <Text style={styles.mimeType} numberOfLines={1}>
-              {resource.mime_type === "application/pdf"
-                ? "PDF"
-                : resource.mime_type}
+            <Text style={styles.fileName} numberOfLines={1}>
+              {resource.file_name}
             </Text>
           </View>
         ) : null}
       </View>
 
-      <View style={styles.viewButtonWrapper}>
+      <View style={styles.cardDivider} />
+
+      <View style={styles.cardActionRow}>
+        <View>
+          <Text style={styles.cardActionHint}>
+            {pdfResource ? "Open in secure viewer" : "Tap to view details"}
+          </Text>
+
+          <Text style={styles.cardActionSubtext}>
+            {pdfResource
+              ? "Zoom and rotate supported"
+              : "PDF preview unavailable"}
+          </Text>
+        </View>
+
         <LinearGradient
           colors={[accent.primary, accent.secondary]}
           start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 0 }}
-          style={styles.viewButton}
+          end={{ x: 1, y: 1 }}
+          style={styles.openButton}
         >
-          <Ionicons name="eye-outline" size={17} color={COLORS.white} />
-
-          <Text style={styles.viewButtonText}>View Resource</Text>
-
-          <Ionicons name="arrow-forward" size={16} color={COLORS.white} />
+          <Ionicons
+            name={pdfResource ? "eye-outline" : "arrow-forward"}
+            size={19}
+            color={COLORS.white}
+          />
         </LinearGradient>
       </View>
     </Pressable>
@@ -374,17 +541,18 @@ export default function ResourcesScreen() {
   const { width, height } = useWindowDimensions();
 
   const [selectedType, setSelectedType] = useState<ResourceFilter>("All");
-
   const [search, setSearch] = useState("");
 
   useEffect(() => {
     void clearTemporaryResourcePdfs();
   }, []);
 
-  const isTablet = width >= 768;
+  const isTablet = width >= 720;
   const isCompact = width < 360 || height < 700;
+  const columns = isTablet ? 2 : 1;
 
   const horizontalPadding = isTablet ? 28 : isCompact ? 14 : 18;
+  const maxContentWidth = isTablet ? 980 : 680;
 
   const {
     data: resources = [],
@@ -395,11 +563,8 @@ export default function ResourcesScreen() {
     isRefetching,
   } = useQuery({
     queryKey: ["all-resources"],
-
     queryFn: getAllResources,
-
     staleTime: 5 * 60 * 1000,
-
     retry: 2,
   });
 
@@ -421,6 +586,19 @@ export default function ResourcesScreen() {
     return counts;
   }, [resources]);
 
+  const pdfCount = useMemo(
+    () => resources.filter(isPdfResource).length,
+    [resources],
+  );
+
+  const categoryCount = useMemo(
+    () =>
+      RESOURCE_FILTERS.filter(
+        (filter) => filter.label !== "All" && typeCounts[filter.label] > 0,
+      ).length,
+    [typeCounts],
+  );
+
   const filteredResources = useMemo(() => {
     const normalizedSearch = search.trim().toLowerCase();
 
@@ -437,9 +615,7 @@ export default function ResourcesScreen() {
       }
 
       const title = resource.title?.toLowerCase() ?? "";
-
       const description = resource.description?.toLowerCase() ?? "";
-
       const fileName = resource.file_name?.toLowerCase() ?? "";
 
       return (
@@ -450,16 +626,16 @@ export default function ResourcesScreen() {
     });
   }, [resources, search, selectedType]);
 
+  const clearFilters = () => {
+    setSearch("");
+    setSelectedType("All");
+  };
+
   const openResource = (resource: CourseResource) => {
-    const fileName = resource.file_name?.toLowerCase() ?? "";
-
-    const isPdf =
-      resource.mime_type === "application/pdf" || fileName.endsWith(".pdf");
-
-    if (!isPdf) {
+    if (!isPdfResource(resource)) {
       Alert.alert(
-        "Unsupported resource",
-        "Only PDF resources can currently be opened inside the app.",
+        "Preview unavailable",
+        "This resource is not a PDF. In-app viewing is currently available for PDF resources only.",
       );
       return;
     }
@@ -473,6 +649,188 @@ export default function ResourcesScreen() {
     });
   };
 
+  const listHeader = (
+    <>
+      <View style={styles.navigationHeader}>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Go back"
+          hitSlop={10}
+          onPress={() => router.back()}
+          style={({ pressed }) => [
+            styles.navigationButton,
+            pressed && styles.pressed,
+          ]}
+        >
+          <Ionicons name="arrow-back" size={21} color={COLORS.white} />
+        </Pressable>
+
+        <View style={styles.navigationTitle}>
+          <Text style={styles.navigationTitleText}>Study Resources</Text>
+
+          <Text style={styles.navigationSubtitle}>
+            Your course learning library
+          </Text>
+        </View>
+
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Refresh resources"
+          disabled={isRefetching}
+          hitSlop={10}
+          onPress={() => void refetch()}
+          style={({ pressed }) => [
+            styles.navigationButton,
+            pressed && styles.pressed,
+            isRefetching && styles.disabled,
+          ]}
+        >
+          {isRefetching ? (
+            <ActivityIndicator size="small" color={COLORS.cyan} />
+          ) : (
+            <Ionicons name="refresh-outline" size={20} color={COLORS.cyan} />
+          )}
+        </Pressable>
+      </View>
+
+      <LinearGradient
+        colors={["#172554", "#312E81", "#581C87"]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={styles.heroCard}
+      >
+        <View style={styles.heroGlowOne} />
+        <View style={styles.heroGlowTwo} />
+
+        <View style={styles.heroTopRow}>
+          <View style={styles.heroIcon}>
+            <Ionicons name="library-outline" size={28} color={COLORS.white} />
+          </View>
+
+          <View style={styles.heroBadge}>
+            <View style={styles.heroBadgeDot} />
+
+            <Text style={styles.heroBadgeText}>ENROLLED ACCESS</Text>
+          </View>
+        </View>
+
+        <Text style={styles.heroTitle}>Your study material, organised.</Text>
+
+        <Text style={styles.heroDescription}>
+          Browse course notes, e-books, previous-year papers and recorded
+          learning resources from one place.
+        </Text>
+
+        <View style={styles.summaryRow}>
+          <SummaryStat
+            icon="documents-outline"
+            value={resources.length}
+            label="Resources"
+          />
+
+          <View style={styles.summaryDivider} />
+
+          <SummaryStat
+            icon="folder-open-outline"
+            value={categoryCount}
+            label="Categories"
+          />
+
+          <View style={styles.summaryDivider} />
+
+          <SummaryStat
+            icon="reader-outline"
+            value={pdfCount}
+            label="PDF files"
+          />
+        </View>
+      </LinearGradient>
+
+      <View style={styles.contentHeader}>
+        <View>
+          <Text style={styles.contentEyebrow}>COURSE LIBRARY</Text>
+          <Text style={styles.contentTitle}>Learning resources</Text>
+        </View>
+
+        <View style={styles.resultBadge}>
+          <Text style={styles.resultBadgeText}>{filteredResources.length}</Text>
+        </View>
+      </View>
+
+      <View style={styles.searchContainer}>
+        <View style={styles.searchIconContainer}>
+          <Ionicons name="search-outline" size={19} color={COLORS.cyan} />
+        </View>
+
+        <TextInput
+          value={search}
+          onChangeText={setSearch}
+          placeholder="Search title, description or file..."
+          placeholderTextColor={COLORS.mutedDark}
+          autoCapitalize="none"
+          autoCorrect={false}
+          returnKeyType="search"
+          style={styles.searchInput}
+        />
+
+        {search.length > 0 ? (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Clear search"
+            hitSlop={8}
+            onPress={() => setSearch("")}
+            style={({ pressed }) => [
+              styles.clearButton,
+              pressed && styles.pressed,
+            ]}
+          >
+            <Ionicons name="close" size={18} color={COLORS.muted} />
+          </Pressable>
+        ) : null}
+      </View>
+
+      <FlatList
+        horizontal
+        data={RESOURCE_FILTERS}
+        keyExtractor={(filter) => filter.label}
+        showsHorizontalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+        contentContainerStyle={styles.filtersContent}
+        style={styles.filtersList}
+        renderItem={({ item }) => (
+          <FilterButton
+            filter={item.label}
+            icon={item.icon}
+            active={selectedType === item.label}
+            count={typeCounts[item.label]}
+            onPress={() => setSelectedType(item.label)}
+          />
+        )}
+      />
+
+      {search.trim() || selectedType !== "All" ? (
+        <View style={styles.activeFilterRow}>
+          <View style={styles.activeFilterInfo}>
+            <Ionicons name="options-outline" size={15} color={COLORS.cyan} />
+
+            <Text style={styles.activeFilterText}>
+              Showing {filteredResources.length} matching{" "}
+              {filteredResources.length === 1 ? "resource" : "resources"}
+            </Text>
+          </View>
+
+          <Pressable
+            accessibilityRole="button"
+            onPress={clearFilters}
+            hitSlop={8}
+          >
+            <Text style={styles.clearAllText}>Clear</Text>
+          </Pressable>
+        </View>
+      ) : null}
+    </>
+  );
+
   return (
     <SafeAreaView style={styles.safeArea} edges={["top", "bottom"]}>
       <StatusBar style="light" backgroundColor={COLORS.background} />
@@ -485,151 +843,64 @@ export default function ResourcesScreen() {
           styles.screen,
           {
             paddingHorizontal: horizontalPadding,
-            maxWidth: isTablet ? 820 : undefined,
+            maxWidth: maxContentWidth,
           },
         ]}
       >
-        <View style={styles.navigationHeader}>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Go back"
-            hitSlop={10}
-            onPress={() => router.back()}
-            style={({ pressed }) => [
-              styles.navigationButton,
-              pressed && styles.pressed,
-            ]}
-          >
-            <Ionicons name="arrow-back" size={21} color={COLORS.white} />
-          </Pressable>
-
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Refresh resources"
-            disabled={isRefetching}
-            hitSlop={10}
-            onPress={() => void refetch()}
-            style={({ pressed }) => [
-              styles.navigationButton,
-              pressed && styles.pressed,
-              isRefetching && styles.disabled,
-            ]}
-          >
-            {isRefetching ? (
-              <ActivityIndicator size="small" color={COLORS.cyan} />
+        <FlatList
+          key={`resources-${columns}`}
+          data={isLoading || isError ? [] : filteredResources}
+          keyExtractor={(item) => String(item.id)}
+          numColumns={columns}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+          columnWrapperStyle={columns === 2 ? styles.columnWrapper : undefined}
+          contentContainerStyle={styles.listContent}
+          refreshControl={
+            <RefreshControl
+              refreshing={isRefetching}
+              onRefresh={() => void refetch()}
+              tintColor={COLORS.cyan}
+              colors={[COLORS.cyan]}
+              progressBackgroundColor={COLORS.surface}
+            />
+          }
+          ListHeaderComponent={listHeader}
+          ListEmptyComponent={
+            isLoading ? (
+              <LoadingState columns={columns} />
+            ) : isError ? (
+              <ErrorState
+                message={
+                  error instanceof Error
+                    ? error.message
+                    : "Network error while loading resources."
+                }
+                onRetry={() => void refetch()}
+              />
             ) : (
-              <Ionicons name="refresh-outline" size={20} color={COLORS.cyan} />
-            )}
-          </Pressable>
-        </View>
-
-        <View style={styles.pageHeader}>
-          <View style={styles.titleRow}>
-            <Ionicons name="library-outline" size={26} color={COLORS.cyan} />
-
-            <Text style={styles.pageTitle}>Study Materials</Text>
-          </View>
-
-          <Text style={styles.pageDescription}>
-            Browse notes, e-books, past papers and recorded sessions—all in one
-            place.
-          </Text>
-
-          {resources.length > 0 ? (
-            <Text style={styles.resourceTotal}>
-              {resources.length}{" "}
-              {resources.length === 1 ? "resource" : "resources"} available
-            </Text>
-          ) : null}
-        </View>
-
-        <View style={styles.searchContainer}>
-          <Ionicons name="search-outline" size={18} color={COLORS.mutedDark} />
-
-          <TextInput
-            value={search}
-            onChangeText={setSearch}
-            placeholder="Search resources..."
-            placeholderTextColor={COLORS.mutedDark}
-            autoCapitalize="none"
-            autoCorrect={false}
-            returnKeyType="search"
-            style={styles.searchInput}
-          />
-
-          {search.length > 0 ? (
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Clear search"
-              hitSlop={8}
-              onPress={() => setSearch("")}
-              style={({ pressed }) => [
-                styles.clearButton,
-                pressed && styles.pressed,
+              <EmptyState
+                search={search}
+                selectedType={selectedType}
+                onClear={clearFilters}
+              />
+            )
+          }
+          renderItem={({ item }) => (
+            <View
+              style={[
+                styles.resourceColumn,
+                columns === 2 && styles.resourceColumnTablet,
               ]}
             >
-              <Ionicons name="close" size={18} color={COLORS.muted} />
-            </Pressable>
-          ) : null}
-        </View>
-
-        <View style={styles.filtersContainer}>
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            keyboardShouldPersistTaps="handled"
-            contentContainerStyle={styles.filtersContent}
-          >
-            {RESOURCE_FILTERS.map((filter) => (
-              <FilterButton
-                key={filter}
-                filter={filter}
-                active={selectedType === filter}
-                count={typeCounts[filter]}
-                onPress={() => setSelectedType(filter)}
-              />
-            ))}
-          </ScrollView>
-        </View>
-
-        {isLoading ? (
-          <LoadingState />
-        ) : isError ? (
-          <ErrorState
-            message={
-              error instanceof Error
-                ? error.message
-                : "Network error while loading resources."
-            }
-            onRetry={() => void refetch()}
-          />
-        ) : filteredResources.length === 0 ? (
-          <EmptyState search={search} selectedType={selectedType} />
-        ) : (
-          <FlatList
-            data={filteredResources}
-            keyExtractor={(item) => String(item.id)}
-            showsVerticalScrollIndicator={false}
-            keyboardShouldPersistTaps="handled"
-            contentContainerStyle={styles.listContent}
-            refreshControl={
-              <RefreshControl
-                refreshing={isRefetching}
-                onRefresh={() => void refetch()}
-                tintColor={COLORS.cyan}
-                colors={[COLORS.cyan]}
-                progressBackgroundColor={COLORS.background}
-              />
-            }
-            renderItem={({ item }) => (
               <ResourceCard
                 resource={item}
                 compact={isCompact}
-                onPress={() => void openResource(item)}
+                onPress={() => openResource(item)}
               />
-            )}
-          />
-        )}
+            </View>
+          )}
+        />
       </View>
     </SafeAreaView>
   );
@@ -654,7 +925,7 @@ const styles = StyleSheet.create({
     width: 480,
     height: 480,
     borderRadius: 480,
-    backgroundColor: "rgba(37,99,235,0.06)",
+    backgroundColor: "rgba(37,99,235,0.09)",
   },
 
   backgroundGlowBottom: {
@@ -664,92 +935,273 @@ const styles = StyleSheet.create({
     width: 430,
     height: 430,
     borderRadius: 430,
-    backgroundColor: "rgba(79,70,229,0.05)",
+    backgroundColor: "rgba(168,85,247,0.07)",
+  },
+
+  listContent: {
+    paddingBottom: 44,
   },
 
   navigationHeader: {
-    minHeight: 58,
+    minHeight: 64,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
   },
 
   navigationButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
+    width: 43,
+    height: 43,
+    borderRadius: 14,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "rgba(255,255,255,0.04)",
+    backgroundColor: COLORS.surfaceSoft,
     borderWidth: 1,
     borderColor: COLORS.border,
   },
 
-  pageHeader: {
-    paddingTop: 12,
-    paddingBottom: 25,
+  navigationTitle: {
+    flex: 1,
+    alignItems: "center",
+    paddingHorizontal: 10,
   },
 
-  titleRow: {
+  navigationTitleText: {
+    color: COLORS.white,
+    fontSize: 16,
+    fontWeight: "900",
+  },
+
+  navigationSubtitle: {
+    color: COLORS.mutedDark,
+    fontSize: 10,
+    fontWeight: "600",
+    marginTop: 3,
+  },
+
+  heroCard: {
+    overflow: "hidden",
+    borderRadius: 27,
+    padding: 21,
+    marginTop: 8,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.1)",
+  },
+
+  heroGlowOne: {
+    position: "absolute",
+    top: -70,
+    right: -55,
+    width: 190,
+    height: 190,
+    borderRadius: 190,
+    backgroundColor: "rgba(255,255,255,0.06)",
+  },
+
+  heroGlowTwo: {
+    position: "absolute",
+    bottom: -85,
+    left: -65,
+    width: 210,
+    height: 210,
+    borderRadius: 210,
+    backgroundColor: "rgba(51,214,255,0.06)",
+  },
+
+  heroTopRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 11,
+    justifyContent: "space-between",
   },
 
-  pageTitle: {
+  heroIcon: {
+    width: 55,
+    height: 55,
+    borderRadius: 18,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "rgba(76,195,255,0.17)",
+    borderWidth: 1,
+    borderColor: "rgba(76,195,255,0.25)",
+  },
+
+  heroBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 11,
+    paddingVertical: 7,
+    borderRadius: 999,
+    backgroundColor: "rgba(34,197,94,0.1)",
+    borderWidth: 1,
+    borderColor: "rgba(34,197,94,0.22)",
+  },
+
+  heroBadgeDot: {
+    width: 7,
+    height: 7,
+    borderRadius: 7,
+    marginRight: 7,
+    backgroundColor: COLORS.green,
+  },
+
+  heroBadgeText: {
+    color: "#BBF7D0",
+    fontSize: 9,
+    fontWeight: "900",
+    letterSpacing: 0.7,
+  },
+
+  heroTitle: {
+    maxWidth: 560,
     color: COLORS.white,
     fontSize: 27,
     lineHeight: 34,
-    fontWeight: "800",
-    letterSpacing: -0.7,
+    fontWeight: "900",
+    letterSpacing: -0.6,
+    marginTop: 20,
   },
 
-  pageDescription: {
-    maxWidth: 540,
-    color: COLORS.muted,
-    fontSize: 14,
+  heroDescription: {
+    maxWidth: 620,
+    color: "#C7D2FE",
+    fontSize: 13,
     lineHeight: 21,
     marginTop: 9,
   },
 
-  resourceTotal: {
-    color: COLORS.mutedDark,
-    fontSize: 11,
-    fontWeight: "600",
-    marginTop: 9,
-  },
-
-  searchContainer: {
-    minHeight: 46,
+  summaryRow: {
+    minHeight: 74,
     flexDirection: "row",
     alignItems: "center",
-    gap: 9,
-    paddingHorizontal: 13,
-    borderRadius: 12,
-    backgroundColor: COLORS.searchBackground,
+    paddingHorizontal: 5,
+    paddingVertical: 12,
+    borderRadius: 18,
+    marginTop: 21,
+    backgroundColor: "rgba(5,10,28,0.42)",
     borderWidth: 1,
     borderColor: "rgba(255,255,255,0.08)",
   },
 
+  summaryStat: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    minWidth: 0,
+  },
+
+  summaryStatIcon: {
+    width: 34,
+    height: 34,
+    borderRadius: 11,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: COLORS.cyanSoft,
+  },
+
+  summaryStatContent: {
+    marginLeft: 8,
+    minWidth: 0,
+  },
+
+  summaryStatValue: {
+    color: COLORS.white,
+    fontSize: 16,
+    fontWeight: "900",
+  },
+
+  summaryStatLabel: {
+    color: COLORS.muted,
+    fontSize: 9,
+    marginTop: 2,
+  },
+
+  summaryDivider: {
+    width: 1,
+    height: 34,
+    backgroundColor: "rgba(255,255,255,0.1)",
+  },
+
+  contentHeader: {
+    flexDirection: "row",
+    alignItems: "flex-end",
+    justifyContent: "space-between",
+    marginTop: 30,
+    marginBottom: 15,
+  },
+
+  contentEyebrow: {
+    color: COLORS.cyan,
+    fontSize: 10,
+    fontWeight: "900",
+    letterSpacing: 1.2,
+  },
+
+  contentTitle: {
+    color: COLORS.white,
+    fontSize: 23,
+    fontWeight: "900",
+    marginTop: 5,
+  },
+
+  resultBadge: {
+    minWidth: 34,
+    height: 34,
+    paddingHorizontal: 10,
+    borderRadius: 12,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: COLORS.cyanSoft,
+    borderWidth: 1,
+    borderColor: COLORS.cyanBorder,
+  },
+
+  resultBadgeText: {
+    color: COLORS.cyan,
+    fontSize: 12,
+    fontWeight: "900",
+  },
+
+  searchContainer: {
+    height: 54,
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 8,
+    borderRadius: 16,
+    backgroundColor: COLORS.surface,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+
+  searchIconContainer: {
+    width: 39,
+    height: 39,
+    borderRadius: 12,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: COLORS.cyanSoft,
+  },
+
   searchInput: {
     flex: 1,
-    height: 44,
+    height: 52,
+    paddingHorizontal: 11,
     paddingVertical: 0,
     color: COLORS.text,
-    fontSize: 14,
+    fontSize: 13,
   },
 
   clearButton: {
-    width: 28,
-    height: 28,
+    width: 34,
+    height: 34,
     alignItems: "center",
     justifyContent: "center",
   },
 
-  filtersContainer: {
+  filtersList: {
     marginHorizontal: -2,
-    marginTop: 15,
-    marginBottom: 20,
+    marginTop: 14,
+    marginBottom: 18,
   },
 
   filtersContent: {
@@ -759,66 +1211,113 @@ const styles = StyleSheet.create({
   },
 
   filterButton: {
-    minHeight: 34,
-    paddingHorizontal: 13,
-    borderRadius: 17,
+    minHeight: 39,
+    paddingHorizontal: 11,
+    borderRadius: 13,
     flexDirection: "row",
     alignItems: "center",
     gap: 6,
-    backgroundColor: "transparent",
+    backgroundColor: COLORS.surfaceSoft,
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.08)",
+    borderColor: COLORS.border,
   },
 
   filterButtonActive: {
-    backgroundColor: "rgba(255,255,255,0.12)",
-    borderColor: "rgba(255,255,255,0.20)",
+    backgroundColor: "rgba(76,195,255,0.13)",
+    borderColor: COLORS.cyanBorder,
   },
 
   filterButtonText: {
     color: COLORS.muted,
-    fontSize: 12,
-    fontWeight: "600",
+    fontSize: 11,
+    fontWeight: "700",
   },
 
   filterButtonTextActive: {
     color: COLORS.white,
   },
 
+  filterCountBadge: {
+    minWidth: 20,
+    height: 20,
+    paddingHorizontal: 5,
+    borderRadius: 7,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "rgba(255,255,255,0.05)",
+  },
+
+  filterCountBadgeActive: {
+    backgroundColor: "rgba(76,195,255,0.14)",
+  },
+
   filterCountText: {
     color: COLORS.mutedDark,
-    fontSize: 10,
-    fontWeight: "600",
+    fontSize: 9,
+    fontWeight: "800",
   },
 
   filterCountTextActive: {
-    color: COLORS.muted,
+    color: COLORS.cyan,
   },
 
-  listContent: {
-    paddingTop: 1,
-    paddingBottom: 36,
+  activeFilterRow: {
+    minHeight: 39,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 13,
+  },
+
+  activeFilterInfo: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+
+  activeFilterText: {
+    color: COLORS.muted,
+    fontSize: 11,
+    marginLeft: 7,
+  },
+
+  clearAllText: {
+    color: COLORS.cyan,
+    fontSize: 11,
+    fontWeight: "800",
+  },
+
+  columnWrapper: {
+    gap: 14,
+  },
+
+  resourceColumn: {
+    flex: 1,
+  },
+
+  resourceColumnTablet: {
+    maxWidth: "50%",
   },
 
   resourceCard: {
+    flex: 1,
     position: "relative",
     overflow: "hidden",
     padding: 18,
     marginBottom: 14,
-    borderRadius: 18,
-    backgroundColor: COLORS.card,
+    borderRadius: 21,
+    backgroundColor: COLORS.surface,
     borderWidth: 1,
     borderColor: COLORS.border,
   },
 
   resourceCardCompact: {
     padding: 15,
-    borderRadius: 16,
+    borderRadius: 18,
     marginBottom: 11,
   },
 
   resourceCardPressed: {
-    backgroundColor: COLORS.cardPressed,
+    backgroundColor: COLORS.surfacePressed,
     borderColor: COLORS.borderStrong,
     transform: [{ scale: 0.995 }],
   },
@@ -829,138 +1328,191 @@ const styles = StyleSheet.create({
     left: 20,
     right: 20,
     height: 2,
-    borderBottomLeftRadius: 2,
-    borderBottomRightRadius: 2,
-    opacity: 0.75,
+    opacity: 0.82,
   },
 
-  resourceTypeRow: {
+  resourceCardTop: {
     flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    marginBottom: 13,
+    alignItems: "flex-start",
+    justifyContent: "space-between",
+    marginBottom: 17,
   },
 
-  resourceTypeIcon: {
-    width: 29,
-    height: 29,
-    borderRadius: 9,
+  resourceIconLarge: {
+    width: 51,
+    height: 51,
+    borderRadius: 17,
     alignItems: "center",
     justifyContent: "center",
     borderWidth: 1,
   },
 
+  resourceBadgeColumn: {
+    alignItems: "flex-end",
+    gap: 6,
+  },
+
+  resourceTypeBadge: {
+    paddingHorizontal: 9,
+    paddingVertical: 6,
+    borderRadius: 9,
+    borderWidth: 1,
+  },
+
   resourceTypeText: {
-    fontSize: 11,
-    fontWeight: "800",
+    fontSize: 9,
+    fontWeight: "900",
     letterSpacing: 0.65,
     textTransform: "uppercase",
   },
 
+  fileStatusBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    paddingHorizontal: 7,
+    paddingVertical: 4,
+    borderRadius: 8,
+    borderWidth: 1,
+  },
+
+  fileStatusPdf: {
+    backgroundColor: "rgba(52,211,153,0.08)",
+    borderColor: "rgba(52,211,153,0.18)",
+  },
+
+  fileStatusUnsupported: {
+    backgroundColor: "rgba(255,255,255,0.035)",
+    borderColor: COLORS.border,
+  },
+
+  fileStatusText: {
+    fontSize: 8,
+    fontWeight: "800",
+  },
+
   resourceTitle: {
-    color: "#F3F4F6",
-    fontSize: 16,
-    lineHeight: 22,
-    fontWeight: "700",
+    color: COLORS.white,
+    fontSize: 17,
+    lineHeight: 23,
+    fontWeight: "900",
   },
 
   resourceDescription: {
     color: COLORS.muted,
-    fontSize: 13,
+    fontSize: 12,
     lineHeight: 19,
-    marginTop: 7,
+    marginTop: 8,
   },
 
   resourceMetadata: {
-    minHeight: 20,
+    minHeight: 22,
     flexDirection: "row",
     alignItems: "center",
     flexWrap: "wrap",
-    gap: 14,
-    marginTop: 14,
+    gap: 12,
+    marginTop: 15,
   },
 
   metadataItem: {
+    maxWidth: "100%",
     flexDirection: "row",
     alignItems: "center",
     gap: 5,
   },
 
-  resourceDate: {
+  metadataText: {
     color: COLORS.mutedDark,
-    fontSize: 11,
+    fontSize: 10,
     fontVariant: ["tabular-nums"],
   },
 
-  mimeType: {
-    maxWidth: 130,
+  fileName: {
+    maxWidth: 180,
     color: COLORS.mutedDark,
-    fontSize: 11,
-    textTransform: "uppercase",
+    fontSize: 10,
   },
 
-  viewButtonWrapper: {
-    width: "100%",
-    marginTop: 17,
-    borderRadius: 12,
-    overflow: "hidden",
+  cardDivider: {
+    height: StyleSheet.hairlineWidth,
+    backgroundColor: COLORS.border,
+    marginVertical: 16,
   },
 
-  viewButton: {
-    minHeight: 43,
-    paddingHorizontal: 15,
-    borderRadius: 12,
+  cardActionRow: {
     flexDirection: "row",
     alignItems: "center",
+    justifyContent: "space-between",
+  },
+
+  cardActionHint: {
+    color: COLORS.text,
+    fontSize: 11,
+    fontWeight: "800",
+  },
+
+  cardActionSubtext: {
+    color: COLORS.mutedDark,
+    fontSize: 9,
+    marginTop: 3,
+  },
+
+  openButton: {
+    width: 43,
+    height: 43,
+    borderRadius: 14,
+    alignItems: "center",
     justifyContent: "center",
-    gap: 8,
   },
 
-  viewButtonText: {
-    color: COLORS.white,
-    fontSize: 13,
-    fontWeight: "700",
-  },
-
-  loadingList: {
+  loadingGrid: {
     paddingTop: 1,
-    paddingBottom: 36,
+  },
+
+  loadingGridTablet: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 14,
+  },
+
+  loadingColumn: {
+    width: "48.8%",
   },
 
   skeletonCard: {
     padding: 18,
     marginBottom: 14,
-    borderRadius: 18,
-    backgroundColor: COLORS.card,
+    borderRadius: 21,
+    backgroundColor: COLORS.surface,
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.06)",
+    borderColor: COLORS.border,
   },
 
-  skeletonTypeRow: {
+  skeletonTopRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 8,
-    marginBottom: 14,
+    justifyContent: "space-between",
   },
 
   skeletonIcon: {
-    width: 29,
-    height: 29,
-    borderRadius: 9,
+    width: 51,
+    height: 51,
+    borderRadius: 17,
     backgroundColor: "rgba(255,255,255,0.08)",
   },
 
-  skeletonType: {
+  skeletonBadge: {
     width: 72,
-    height: 11,
-    borderRadius: 6,
-    backgroundColor: "rgba(255,255,255,0.08)",
+    height: 26,
+    borderRadius: 9,
+    backgroundColor: "rgba(255,255,255,0.07)",
   },
 
   skeletonTitle: {
     width: "72%",
-    height: 17,
+    height: 18,
     borderRadius: 7,
+    marginTop: 19,
     backgroundColor: "rgba(255,255,255,0.08)",
   },
 
@@ -968,85 +1520,119 @@ const styles = StyleSheet.create({
     width: "100%",
     height: 12,
     borderRadius: 6,
-    marginTop: 12,
+    marginTop: 13,
     backgroundColor: "rgba(255,255,255,0.06)",
   },
 
   skeletonDescriptionShort: {
-    width: "64%",
+    width: "66%",
     height: 12,
     borderRadius: 6,
     marginTop: 7,
     backgroundColor: "rgba(255,255,255,0.06)",
   },
 
-  skeletonDate: {
-    width: 92,
-    height: 10,
-    borderRadius: 5,
-    marginTop: 16,
+  skeletonBottomRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginTop: 28,
+  },
+
+  skeletonMeta: {
+    width: 100,
+    height: 11,
+    borderRadius: 6,
     backgroundColor: "rgba(255,255,255,0.05)",
   },
 
-  skeletonButton: {
-    width: "100%",
+  skeletonAction: {
+    width: 43,
     height: 43,
-    borderRadius: 12,
-    marginTop: 17,
-    backgroundColor: "rgba(255,255,255,0.06)",
+    borderRadius: 14,
+    backgroundColor: "rgba(255,255,255,0.07)",
   },
 
   centerState: {
-    flex: 1,
-    minHeight: 300,
+    minHeight: 330,
     alignItems: "center",
     justifyContent: "center",
     paddingHorizontal: 28,
   },
 
-  stateIconContainer: {
-    width: 62,
-    height: 62,
-    borderRadius: 20,
+  errorIconContainer: {
+    width: 72,
+    height: 72,
+    borderRadius: 24,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "rgba(255,255,255,0.04)",
+    backgroundColor: "rgba(251,113,133,0.1)",
     borderWidth: 1,
-    borderColor: COLORS.border,
+    borderColor: "rgba(251,113,133,0.2)",
+  },
+
+  emptyIconContainer: {
+    width: 72,
+    height: 72,
+    borderRadius: 24,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: COLORS.cyanSoft,
+    borderWidth: 1,
+    borderColor: COLORS.cyanBorder,
   },
 
   stateTitle: {
     color: COLORS.white,
-    fontSize: 17,
-    fontWeight: "700",
+    fontSize: 18,
+    fontWeight: "900",
     textAlign: "center",
-    marginTop: 15,
+    marginTop: 17,
   },
 
   stateDescription: {
+    maxWidth: 420,
     color: COLORS.muted,
     fontSize: 13,
-    lineHeight: 19,
+    lineHeight: 20,
     textAlign: "center",
-    marginTop: 7,
+    marginTop: 8,
   },
 
   retryButton: {
-    minHeight: 42,
-    paddingHorizontal: 17,
-    borderRadius: 12,
+    minHeight: 44,
+    paddingHorizontal: 18,
+    borderRadius: 13,
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
     gap: 7,
-    marginTop: 18,
-    backgroundColor: "#2563EB",
+    marginTop: 20,
+    backgroundColor: COLORS.cyan,
   },
 
   retryButtonText: {
-    color: COLORS.white,
+    color: COLORS.background,
     fontSize: 13,
-    fontWeight: "700",
+    fontWeight: "900",
+  },
+
+  clearFiltersButton: {
+    minHeight: 42,
+    paddingHorizontal: 16,
+    borderRadius: 13,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 7,
+    marginTop: 18,
+    borderWidth: 1,
+    borderColor: COLORS.cyanBorder,
+    backgroundColor: COLORS.cyanSoft,
+  },
+
+  clearFiltersText: {
+    color: COLORS.cyan,
+    fontSize: 12,
+    fontWeight: "800",
   },
 
   pressed: {

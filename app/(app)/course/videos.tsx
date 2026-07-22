@@ -1,8 +1,9 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useQuery } from "@tanstack/react-query";
 import { router } from "expo-router";
+import * as ScreenOrientation from "expo-screen-orientation";
 import { StatusBar } from "expo-status-bar";
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
   FlatList,
@@ -309,13 +310,18 @@ function SectionCard({
 }
 
 export default function VideoLecturesScreen() {
-  const { width } = useWindowDimensions();
+  const { width, height } = useWindowDimensions();
 
   const playerRef = useRef<YoutubeIframeRef | null>(null);
+  const previousOrientationLockRef =
+    useRef<ScreenOrientation.OrientationLock | null>(null);
 
   const [currentVideo, setCurrentVideo] = useState<VideoLecture | null>(null);
 
   const [playing, setPlaying] = useState(false);
+
+  const [resumeAt, setResumeAt] = useState(0);
+  const [isChangingOrientation, setIsChangingOrientation] = useState(false);
 
   const [search, setSearch] = useState("");
 
@@ -323,9 +329,11 @@ export default function VideoLecturesScreen() {
     new Set(),
   );
 
-  const contentWidth = Math.min(Math.max(width - 32, 0), 860);
+  const screenWidth = Math.min(Math.max(width, 0), 892);
+  const contentWidth = Math.max(screenWidth - 32, 0);
 
   const playerHeight = Math.max(Math.round(contentWidth * (9 / 16)), 210);
+  const isLandscape = width > height;
 
   const {
     data: sections = [],
@@ -343,6 +351,40 @@ export default function VideoLecturesScreen() {
 
     retry: 2,
   });
+
+  useEffect(() => {
+    let mounted = true;
+
+    void ScreenOrientation.getOrientationLockAsync()
+      .then((orientationLock) => {
+        if (mounted) {
+          previousOrientationLockRef.current = orientationLock;
+        }
+      })
+      .catch((orientationError) => {
+        console.warn(
+          "Unable to read the current screen orientation:",
+          orientationError,
+        );
+      });
+
+    return () => {
+      mounted = false;
+
+      const orientationLock =
+        previousOrientationLockRef.current ??
+        ScreenOrientation.OrientationLock.PORTRAIT_UP;
+
+      void ScreenOrientation.lockAsync(orientationLock).catch(
+        (orientationError) => {
+          console.warn(
+            "Unable to restore the previous screen orientation:",
+            orientationError,
+          );
+        },
+      );
+    };
+  }, []);
 
   const allVideos = useMemo(() => getAllVideos(sections), [sections]);
 
@@ -375,6 +417,15 @@ export default function VideoLecturesScreen() {
     () => allVideos.reduce((total, video) => total + (video.duration ?? 0), 0),
     [allVideos],
   );
+
+  const lectureProgress =
+    allVideos.length > 0 && currentIndex >= 0
+      ? ((currentIndex + 1) / allVideos.length) * 100
+      : 0;
+
+  const allSectionsExpanded =
+    sections.length > 0 &&
+    sections.every((section) => expandedSections.has(section.id));
 
   const filteredSections = useMemo(() => {
     const normalizedSearch = search.trim().toLowerCase();
@@ -424,8 +475,56 @@ export default function VideoLecturesScreen() {
 
   const selectVideo = useCallback((video: VideoLecture) => {
     setPlaying(false);
+    setResumeAt(0);
     setCurrentVideo(video);
   }, []);
+
+  const saveCurrentPlaybackPosition = useCallback(async () => {
+    try {
+      const currentTime = await playerRef.current?.getCurrentTime();
+
+      if (
+        typeof currentTime === "number" &&
+        Number.isFinite(currentTime) &&
+        currentTime >= 0
+      ) {
+        setResumeAt(currentTime);
+      }
+    } catch (playerError) {
+      console.warn("Unable to save the current video position:", playerError);
+    }
+  }, []);
+
+  const togglePlayerOrientation = useCallback(async () => {
+    if (isChangingOrientation) {
+      return;
+    }
+
+    try {
+      setIsChangingOrientation(true);
+      await saveCurrentPlaybackPosition();
+
+      await ScreenOrientation.lockAsync(
+        isLandscape
+          ? ScreenOrientation.OrientationLock.PORTRAIT_UP
+          : ScreenOrientation.OrientationLock.LANDSCAPE,
+      );
+    } catch (orientationError) {
+      console.warn("Unable to rotate the video player:", orientationError);
+    } finally {
+      setIsChangingOrientation(false);
+    }
+  }, [isChangingOrientation, isLandscape, saveCurrentPlaybackPosition]);
+
+  const toggleAllSections = useCallback(() => {
+    setExpandedSections(() => {
+      if (allSectionsExpanded) {
+        return new Set();
+      }
+
+      return new Set(sections.map((section) => section.id));
+    });
+  }, [allSectionsExpanded, sections]);
 
   const goPrevious = useCallback(() => {
     if (!canGoPrevious) {
@@ -433,6 +532,7 @@ export default function VideoLecturesScreen() {
     }
 
     setPlaying(false);
+    setResumeAt(0);
 
     setCurrentVideo(allVideos[currentIndex - 1]);
   }, [allVideos, canGoPrevious, currentIndex]);
@@ -443,6 +543,7 @@ export default function VideoLecturesScreen() {
     }
 
     setPlaying(false);
+    setResumeAt(0);
 
     setCurrentVideo(allVideos[currentIndex + 1]);
   }, [allVideos, canGoNext, currentIndex]);
@@ -484,6 +585,80 @@ export default function VideoLecturesScreen() {
     );
   }
 
+  if (isLandscape && selectedVideo && videoId) {
+    return (
+      <View style={styles.landscapeScreen}>
+        <StatusBar hidden />
+
+        <YoutubePlayer
+          ref={playerRef}
+          key={`${videoId}-landscape`}
+          height={height}
+          width={width}
+          videoId={videoId}
+          play={playing}
+          onChangeState={handlePlayerStateChange}
+          forceAndroidAutoplay={false}
+          webViewStyle={styles.youtubeWebView}
+          webViewProps={{
+            allowsFullscreenVideo: true,
+            mediaPlaybackRequiresUserAction: false,
+            allowsInlineMediaPlayback: true,
+            javaScriptEnabled: true,
+            domStorageEnabled: true,
+            scrollEnabled: false,
+            bounces: false,
+          }}
+          initialPlayerParams={{
+            controls: true,
+            preventFullScreen: false,
+            rel: false,
+            loop: false,
+            start: Math.floor(resumeAt),
+          }}
+        />
+
+        <View style={styles.landscapeVideoOverlay}>
+          <View style={styles.landscapeLectureBadge}>
+            <Text numberOfLines={1} style={styles.landscapeTitle}>
+              {selectedVideo.title}
+            </Text>
+
+            <Text style={styles.landscapeSubtitle}>
+              Lecture {currentIndex + 1} of {allVideos.length}
+            </Text>
+          </View>
+
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Rotate video back to portrait"
+            disabled={isChangingOrientation}
+            onPress={() => void togglePlayerOrientation()}
+            style={({ pressed }) => [
+              styles.landscapeRotateButton,
+              pressed && styles.pressed,
+              isChangingOrientation && styles.disabled,
+            ]}
+          >
+            {isChangingOrientation ? (
+              <ActivityIndicator size="small" color={COLORS.white} />
+            ) : (
+              <>
+                <Ionicons
+                  name="phone-portrait-outline"
+                  size={22}
+                  color={COLORS.white}
+                />
+
+                <Text style={styles.landscapeRotateText}>Portrait</Text>
+              </>
+            )}
+          </Pressable>
+        </View>
+      </View>
+    );
+  }
+
   return (
     <SafeAreaView style={styles.safeArea} edges={["top", "bottom"]}>
       <StatusBar style="light" backgroundColor={COLORS.background} />
@@ -495,7 +670,7 @@ export default function VideoLecturesScreen() {
         style={[
           styles.screen,
           {
-            width: contentWidth,
+            width: screenWidth,
           },
         ]}
       >
@@ -595,8 +770,33 @@ export default function VideoLecturesScreen() {
                         preventFullScreen: false,
                         rel: false,
                         loop: false,
+                        start: Math.floor(resumeAt),
                       }}
                     />
+
+                    <Pressable
+                      accessibilityRole="button"
+                      accessibilityLabel="Rotate video to landscape"
+                      disabled={isChangingOrientation}
+                      onPress={() => void togglePlayerOrientation()}
+                      style={({ pressed }) => [
+                        styles.rotatePlayerButton,
+                        pressed && styles.pressed,
+                        isChangingOrientation && styles.disabled,
+                      ]}
+                    >
+                      {isChangingOrientation ? (
+                        <ActivityIndicator size="small" color={COLORS.white} />
+                      ) : (
+                        <Ionicons
+                          name="scan-outline"
+                          size={19}
+                          color={COLORS.white}
+                        />
+                      )}
+
+                      <Text style={styles.rotatePlayerText}>Rotate</Text>
+                    </Pressable>
                   </View>
                 ) : (
                   <EmptyPlayer
@@ -661,6 +861,27 @@ export default function VideoLecturesScreen() {
                       ) : null}
                     </View>
 
+                    <View style={styles.lectureProgressHeader}>
+                      <Text style={styles.lectureProgressLabel}>
+                        Course progress
+                      </Text>
+
+                      <Text style={styles.lectureProgressValue}>
+                        {Math.round(lectureProgress)}%
+                      </Text>
+                    </View>
+
+                    <View style={styles.lectureProgressTrack}>
+                      <View
+                        style={[
+                          styles.lectureProgressFill,
+                          {
+                            width: `${lectureProgress}%`,
+                          },
+                        ]}
+                      />
+                    </View>
+
                     <View style={styles.videoControls}>
                       <Pressable
                         accessibilityRole="button"
@@ -719,12 +940,46 @@ export default function VideoLecturesScreen() {
                   </Text>
                 </View>
 
-                <View style={styles.contentCount}>
-                  <Ionicons name="list-outline" size={15} color={COLORS.cyan} />
+                <View style={styles.contentHeaderActions}>
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel={
+                      allSectionsExpanded
+                        ? "Collapse all course sections"
+                        : "Expand all course sections"
+                    }
+                    onPress={toggleAllSections}
+                    style={({ pressed }) => [
+                      styles.expandAllButton,
+                      pressed && styles.pressed,
+                    ]}
+                  >
+                    <Ionicons
+                      name={
+                        allSectionsExpanded
+                          ? "contract-outline"
+                          : "expand-outline"
+                      }
+                      size={14}
+                      color={COLORS.text}
+                    />
 
-                  <Text style={styles.contentCountText}>
-                    {allVideos.length}
-                  </Text>
+                    <Text style={styles.expandAllText}>
+                      {allSectionsExpanded ? "Collapse" : "Expand"}
+                    </Text>
+                  </Pressable>
+
+                  <View style={styles.contentCount}>
+                    <Ionicons
+                      name="list-outline"
+                      size={15}
+                      color={COLORS.cyan}
+                    />
+
+                    <Text style={styles.contentCountText}>
+                      {allVideos.length}
+                    </Text>
+                  </View>
                 </View>
               </View>
 
@@ -815,6 +1070,66 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.background,
   },
 
+  landscapeScreen: {
+    flex: 1,
+    backgroundColor: "#000000",
+  },
+
+  landscapeVideoOverlay: {
+    position: "absolute",
+    top: 14,
+    left: 14,
+    right: 14,
+    flexDirection: "row",
+    alignItems: "flex-start",
+    justifyContent: "space-between",
+  },
+
+  landscapeLectureBadge: {
+    flex: 1,
+    minWidth: 0,
+    maxWidth: "70%",
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    marginRight: 12,
+    borderRadius: 14,
+    backgroundColor: "rgba(0,0,0,0.68)",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.14)",
+  },
+
+  landscapeRotateButton: {
+    minWidth: 82,
+    height: 44,
+    paddingHorizontal: 12,
+    borderRadius: 14,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 7,
+    backgroundColor: "rgba(0,0,0,0.72)",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.18)",
+  },
+
+  landscapeRotateText: {
+    color: COLORS.white,
+    fontSize: 11,
+    fontWeight: "800",
+  },
+
+  landscapeTitle: {
+    color: COLORS.white,
+    fontSize: 13,
+    fontWeight: "800",
+  },
+
+  landscapeSubtitle: {
+    color: "rgba(255,255,255,0.58)",
+    fontSize: 9,
+    marginTop: 3,
+  },
+
   screen: {
     flex: 1,
     alignSelf: "center",
@@ -893,6 +1208,27 @@ const styles = StyleSheet.create({
   playerContainer: {
     overflow: "hidden",
     backgroundColor: "#000000",
+  },
+
+  rotatePlayerButton: {
+    position: "absolute",
+    top: 10,
+    right: 10,
+    minHeight: 36,
+    paddingHorizontal: 11,
+    borderRadius: 12,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    backgroundColor: "rgba(0,0,0,0.74)",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.16)",
+  },
+
+  rotatePlayerText: {
+    color: COLORS.white,
+    fontSize: 10,
+    fontWeight: "800",
   },
 
   youtubeWebView: {
@@ -1009,6 +1345,40 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
   },
 
+  lectureProgressHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginTop: 16,
+  },
+
+  lectureProgressLabel: {
+    color: COLORS.muted,
+    fontSize: 10,
+    fontWeight: "700",
+  },
+
+  lectureProgressValue: {
+    color: COLORS.cyan,
+    fontSize: 10,
+    fontWeight: "800",
+    fontVariant: ["tabular-nums"],
+  },
+
+  lectureProgressTrack: {
+    height: 5,
+    overflow: "hidden",
+    marginTop: 7,
+    borderRadius: 999,
+    backgroundColor: "rgba(255,255,255,0.07)",
+  },
+
+  lectureProgressFill: {
+    height: "100%",
+    borderRadius: 999,
+    backgroundColor: COLORS.cyan,
+  },
+
   videoControls: {
     flexDirection: "row",
     alignItems: "center",
@@ -1069,6 +1439,30 @@ const styles = StyleSheet.create({
     color: COLORS.mutedDark,
     fontSize: 11,
     marginTop: 4,
+  },
+
+  contentHeaderActions: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+
+  expandAllButton: {
+    minHeight: 32,
+    paddingHorizontal: 10,
+    borderRadius: 10,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    backgroundColor: COLORS.surfaceSoft,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+
+  expandAllText: {
+    color: COLORS.text,
+    fontSize: 10,
+    fontWeight: "700",
   },
 
   contentCount: {

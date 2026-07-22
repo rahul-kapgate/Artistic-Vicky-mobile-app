@@ -3,7 +3,7 @@
     "name": "AV Academy",
     "slug": "artisticvickey",
     "version": "1.0.0",
-    "orientation": "portrait",
+    "orientation": "default",
     "icon": "./assets/images/app-icon-one.png",
     "scheme": "artisticvickymobile",
     "userInterfaceStyle": "automatic",
@@ -36,6 +36,12 @@
           "dark": {
             "backgroundColor": "#000000"
           }
+        }
+      ],
+      [
+        "expo-screen-orientation",
+        {
+          "initialOrientation": "DEFAULT"
         }
       ],
       "expo-secure-store",
