@@ -4,7 +4,7 @@
     "slug": "artisticvickey",
     "version": "1.0.0",
     "orientation": "default",
-    "icon": "./assets/images/app-icon-one.png",
+    "icon": "./assets/images/app-logo-v.png",
     "scheme": "artisticvickymobile",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
@@ -13,7 +13,7 @@
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/images/app-icon.png",
+        "foregroundImage": "./assets/images/app-logo-v.png",
         "backgroundColor": "#ffffff"
       },
       "edgeToEdgeEnabled": true,

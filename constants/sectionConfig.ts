@@ -40,7 +40,7 @@ const SECTION_CONFIG: Record<
   },
 
   "pyq-mock-test": {
-    title: "Previous Year Papers",
+    title: "PYQ Test",
     subtitle: "Solve previous year questions with detailed solutions.",
     icon: FontAwesome5,
     iconName: "history",

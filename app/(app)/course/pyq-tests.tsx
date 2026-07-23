@@ -615,7 +615,7 @@ export default function PYQTestsScreen() {
           </Pressable>
 
           <View style={styles.headerCenter}>
-            <Text style={styles.headerTitle}>Previous Year Papers</Text>
+            <Text style={styles.headerTitle}>PYQ Test</Text>
 
             <Text style={styles.headerSubtitle}>MAH AAC CET practice</Text>
           </View>
