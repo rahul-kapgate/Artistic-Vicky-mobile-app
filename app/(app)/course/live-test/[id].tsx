@@ -322,6 +322,10 @@ export default function LiveTestScreen() {
   const questions = session?.test.questions ?? [];
   const currentQuestion = questions[currentIndex];
   const answeredCount = Object.keys(answers).length;
+  const unansweredCount = Math.max(questions.length - answeredCount, 0);
+  const currentAnswered = Boolean(
+    currentQuestion && answers[currentQuestion.id] !== undefined,
+  );
   const progress =
     questions.length > 0 ? ((currentIndex + 1) / questions.length) * 100 : 0;
 
@@ -652,26 +656,52 @@ export default function LiveTestScreen() {
           </Pressable>
         </View>
 
-        <View style={styles.metaRow}>
+        <View style={styles.testOverview}>
           <View
             style={[
-              styles.timerPill,
-              { borderColor: `${getTimerColor(timeLeft)}55` },
+              styles.timerCard,
+              {
+                borderColor: `${getTimerColor(timeLeft)}45`,
+                backgroundColor: `${getTimerColor(timeLeft)}10`,
+              },
             ]}
           >
-            <Ionicons
-              name="time-outline"
-              size={16}
-              color={getTimerColor(timeLeft)}
-            />
-            <Text
-              style={[styles.timerText, { color: getTimerColor(timeLeft) }]}
+            <View
+              style={[
+                styles.overviewIcon,
+                { backgroundColor: `${getTimerColor(timeLeft)}16` },
+              ]}
             >
-              {formatTime(timeLeft)}
-            </Text>
+              <Ionicons
+                name="timer-outline"
+                size={18}
+                color={getTimerColor(timeLeft)}
+              />
+            </View>
+
+            <View>
+              <Text style={styles.overviewLabel}>TIME LEFT</Text>
+              <Text
+                style={[styles.timerText, { color: getTimerColor(timeLeft) }]}
+              >
+                {formatTime(timeLeft)}
+              </Text>
+            </View>
           </View>
 
-          <Text style={styles.answeredText}>{answeredCount} answered</Text>
+          <View style={styles.answerStats}>
+            <View style={styles.answerStatItem}>
+              <Text style={styles.answerStatValue}>{answeredCount}</Text>
+              <Text style={styles.answerStatLabel}>Answered</Text>
+            </View>
+
+            <View style={styles.answerStatDivider} />
+
+            <View style={styles.answerStatItem}>
+              <Text style={styles.answerStatValue}>{unansweredCount}</Text>
+              <Text style={styles.answerStatLabel}>Remaining</Text>
+            </View>
+          </View>
         </View>
 
         <View style={styles.progressTrack}>
@@ -692,12 +722,32 @@ export default function LiveTestScreen() {
         >
           <View style={[styles.questionCard, { maxWidth: contentMaxWidth }]}>
             <View style={styles.questionMeta}>
-              <Text style={styles.questionNumber}>Q{currentIndex + 1}</Text>
-              {currentQuestion.difficulty ? (
-                <Text style={styles.difficulty}>
-                  {currentQuestion.difficulty}
+              <View style={styles.questionNumberBadge}>
+                <Text style={styles.questionNumber}>
+                  Question {currentIndex + 1}
                 </Text>
-              ) : null}
+              </View>
+
+              <View style={styles.questionStatusRow}>
+                {currentAnswered ? (
+                  <View style={styles.answeredBadge}>
+                    <Ionicons
+                      name="checkmark-circle"
+                      size={14}
+                      color={COLORS.green}
+                    />
+                    <Text style={styles.answeredBadgeText}>Answered</Text>
+                  </View>
+                ) : null}
+
+                {currentQuestion.difficulty ? (
+                  <View style={styles.difficultyBadge}>
+                    <Text style={styles.difficulty}>
+                      {currentQuestion.difficulty}
+                    </Text>
+                  </View>
+                ) : null}
+              </View>
             </View>
 
             <Text style={styles.questionText}>
@@ -743,36 +793,63 @@ export default function LiveTestScreen() {
           <Pressable
             disabled={currentIndex === 0 || submitting}
             onPress={() => setCurrentIndex((index) => index - 1)}
-            style={[styles.footerButton, currentIndex === 0 && styles.disabled]}
+            style={({ pressed }) => [
+              styles.footerButton,
+              currentIndex === 0 && styles.disabled,
+              pressed && currentIndex > 0 && styles.pressed,
+            ]}
           >
-            <Ionicons name="chevron-back" size={18} color={COLORS.text} />
+            <Ionicons name="arrow-back" size={18} color={COLORS.text} />
             <Text style={styles.footerButtonText}>Previous</Text>
           </Pressable>
 
-          <Text style={styles.footerCounter}>
-            {currentIndex + 1}/{questions.length}
-          </Text>
+          <Pressable
+            accessibilityRole="button"
+            onPress={() => setTrackerOpen(true)}
+            style={({ pressed }) => [
+              styles.footerCounterButton,
+              pressed && styles.pressed,
+            ]}
+          >
+            <Ionicons name="grid-outline" size={16} color={COLORS.cyan} />
+            <Text style={styles.footerCounter}>
+              {currentIndex + 1}/{questions.length}
+            </Text>
+          </Pressable>
 
           {currentIndex === questions.length - 1 ? (
             <Pressable
               disabled={submitting}
               onPress={confirmSubmit}
-              style={styles.submitButton}
+              style={({ pressed }) => [
+                styles.submitButton,
+                pressed && styles.pressed,
+              ]}
             >
               {submitting ? (
                 <ActivityIndicator color={COLORS.white} />
               ) : (
-                <Text style={styles.submitButtonText}>Submit</Text>
+                <>
+                  <Text style={styles.submitButtonText}>Submit</Text>
+                  <Ionicons
+                    name="checkmark-circle-outline"
+                    size={18}
+                    color={COLORS.white}
+                  />
+                </>
               )}
             </Pressable>
           ) : (
             <Pressable
               disabled={submitting}
               onPress={() => setCurrentIndex((index) => index + 1)}
-              style={styles.nextButton}
+              style={({ pressed }) => [
+                styles.nextButton,
+                pressed && styles.pressed,
+              ]}
             >
               <Text style={styles.nextButtonText}>Next</Text>
-              <Ionicons name="chevron-forward" size={18} color={COLORS.white} />
+              <Ionicons name="arrow-forward" size={18} color={COLORS.white} />
             </Pressable>
           )}
         </View>
@@ -1009,28 +1086,73 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   headerSubtitle: { color: COLORS.muted, fontSize: 11, marginTop: 2 },
-  metaRow: {
+  testOverview: {
     paddingHorizontal: 16,
-    paddingVertical: 11,
+    paddingTop: 12,
+    paddingBottom: 11,
     flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
+    alignItems: "stretch",
+    gap: 10,
   },
-  timerPill: {
-    minHeight: 38,
-    paddingHorizontal: 12,
-    borderRadius: 12,
+  timerCard: {
+    flex: 1.15,
+    minHeight: 60,
+    paddingHorizontal: 11,
+    borderRadius: 15,
     borderWidth: 1,
     flexDirection: "row",
     alignItems: "center",
-    gap: 7,
+  },
+  overviewIcon: {
+    width: 38,
+    height: 38,
+    borderRadius: 12,
+    alignItems: "center",
+    justifyContent: "center",
+    marginRight: 10,
+  },
+  overviewLabel: {
+    color: COLORS.muted,
+    fontSize: 8,
+    fontWeight: "900",
+    letterSpacing: 0.8,
+  },
+  answerStats: {
+    flex: 1,
+    minHeight: 60,
+    flexDirection: "row",
+    alignItems: "center",
+    borderRadius: 15,
+    backgroundColor: "rgba(255,255,255,0.028)",
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+  answerStatItem: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  answerStatValue: {
+    color: COLORS.white,
+    fontSize: 15,
+    fontWeight: "900",
+  },
+  answerStatLabel: {
+    color: COLORS.muted,
+    fontSize: 8,
+    fontWeight: "700",
+    marginTop: 3,
+  },
+  answerStatDivider: {
+    width: StyleSheet.hairlineWidth,
+    height: 28,
+    backgroundColor: COLORS.border,
   },
   timerText: {
     fontSize: 14,
     fontWeight: "800",
     fontVariant: ["tabular-nums"],
   },
-  answeredText: { color: COLORS.muted, fontSize: 12 },
   progressTrack: {
     height: 4,
     marginHorizontal: 16,
@@ -1055,13 +1177,61 @@ const styles = StyleSheet.create({
   },
   questionMeta: {
     flexDirection: "row",
+    alignItems: "center",
     justifyContent: "space-between",
-    marginBottom: 12,
+    marginBottom: 15,
+    gap: 10,
   },
-  questionNumber: { color: COLORS.cyan, fontSize: 13, fontWeight: "900" },
+  questionNumberBadge: {
+    minHeight: 31,
+    paddingHorizontal: 11,
+    borderRadius: 10,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "rgba(34,211,238,0.09)",
+    borderWidth: 1,
+    borderColor: "rgba(34,211,238,0.20)",
+  },
+  questionNumber: {
+    color: COLORS.cyan,
+    fontSize: 11,
+    fontWeight: "900",
+  },
+  questionStatusRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 7,
+  },
+  answeredBadge: {
+    minHeight: 28,
+    paddingHorizontal: 8,
+    borderRadius: 9,
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "rgba(52,211,153,0.08)",
+    borderWidth: 1,
+    borderColor: "rgba(52,211,153,0.20)",
+  },
+  answeredBadgeText: {
+    color: COLORS.green,
+    fontSize: 9,
+    fontWeight: "900",
+    marginLeft: 4,
+  },
+  difficultyBadge: {
+    minHeight: 28,
+    paddingHorizontal: 9,
+    borderRadius: 9,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "rgba(255,255,255,0.04)",
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
   difficulty: {
     color: COLORS.muted,
-    fontSize: 11,
+    fontSize: 9,
+    fontWeight: "800",
     textTransform: "capitalize",
   },
   questionText: {
@@ -1129,10 +1299,23 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   footerButtonText: { color: COLORS.text, fontWeight: "800" },
+  footerCounterButton: {
+    minWidth: 62,
+    minHeight: 42,
+    paddingHorizontal: 10,
+    borderRadius: 13,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "rgba(34,211,238,0.07)",
+    borderWidth: 1,
+    borderColor: "rgba(34,211,238,0.15)",
+  },
   footerCounter: {
-    color: COLORS.muted,
-    fontSize: 12,
-    minWidth: 46,
+    color: COLORS.cyan,
+    fontSize: 11,
+    fontWeight: "900",
+    marginLeft: 5,
     textAlign: "center",
   },
   nextButton: {
@@ -1151,8 +1334,10 @@ const styles = StyleSheet.create({
     minHeight: 46,
     borderRadius: 14,
     backgroundColor: COLORS.blue,
+    flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
+    gap: 7,
   },
   submitButtonText: { color: COLORS.white, fontWeight: "900" },
   trackerSafeArea: { flex: 1, backgroundColor: COLORS.panelSoft },

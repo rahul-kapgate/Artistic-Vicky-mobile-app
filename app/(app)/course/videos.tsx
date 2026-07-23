@@ -330,9 +330,8 @@ export default function VideoLecturesScreen() {
   );
 
   const screenWidth = Math.min(Math.max(width, 0), 892);
-  const contentWidth = Math.max(screenWidth - 32, 0);
-
-  const playerHeight = Math.max(Math.round(contentWidth * (9 / 16)), 210);
+  const playerWidth = Math.max(Math.round(screenWidth * 0.96), 0);
+  const playerHeight = Math.max(Math.round(playerWidth * (9 / 16)), 210);
   const isLandscape = width > height;
 
   const {
@@ -718,6 +717,91 @@ export default function VideoLecturesScreen() {
           </Pressable>
         </View>
 
+        <View style={styles.fixedPlayerSection}>
+          <View
+            style={[
+              styles.playerCard,
+              {
+                width: playerWidth,
+              },
+            ]}
+          >
+            {isLoading ? (
+              <PlayerSkeleton height={playerHeight} />
+            ) : selectedVideo && videoId ? (
+              <View
+                style={[
+                  styles.playerContainer,
+                  {
+                    width: playerWidth,
+                    height: playerHeight,
+                  },
+                ]}
+              >
+                <YoutubePlayer
+                  ref={playerRef}
+                  key={videoId}
+                  height={playerHeight}
+                  width={playerWidth}
+                  videoId={videoId}
+                  play={playing}
+                  onChangeState={handlePlayerStateChange}
+                  forceAndroidAutoplay={false}
+                  webViewStyle={styles.youtubeWebView}
+                  webViewProps={{
+                    allowsFullscreenVideo: true,
+                    mediaPlaybackRequiresUserAction: false,
+                    allowsInlineMediaPlayback: true,
+                    javaScriptEnabled: true,
+                    domStorageEnabled: true,
+                    scrollEnabled: false,
+                    bounces: false,
+                  }}
+                  initialPlayerParams={{
+                    controls: true,
+                    preventFullScreen: false,
+                    rel: false,
+                    loop: false,
+                    start: Math.floor(resumeAt),
+                  }}
+                />
+
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Rotate video to landscape"
+                  disabled={isChangingOrientation}
+                  onPress={() => void togglePlayerOrientation()}
+                  style={({ pressed }) => [
+                    styles.rotatePlayerButton,
+                    pressed && styles.pressed,
+                    isChangingOrientation && styles.disabled,
+                  ]}
+                >
+                  {isChangingOrientation ? (
+                    <ActivityIndicator size="small" color={COLORS.white} />
+                  ) : (
+                    <Ionicons
+                      name="scan-outline"
+                      size={19}
+                      color={COLORS.white}
+                    />
+                  )}
+
+                  <Text style={styles.rotatePlayerText}>Rotate</Text>
+                </Pressable>
+              </View>
+            ) : (
+              <EmptyPlayer
+                message={
+                  selectedVideo && !videoId
+                    ? "The selected lecture has an invalid YouTube URL."
+                    : "No video lectures are currently available."
+                }
+              />
+            )}
+          </View>
+        </View>
+
         <FlatList
           data={filteredSections}
           keyExtractor={(section) => String(section.id)}
@@ -734,81 +818,8 @@ export default function VideoLecturesScreen() {
           }
           ListHeaderComponent={
             <>
-              <View style={styles.playerCard}>
-                {isLoading ? (
-                  <PlayerSkeleton height={playerHeight} />
-                ) : selectedVideo && videoId ? (
-                  <View
-                    style={[
-                      styles.playerContainer,
-                      {
-                        height: playerHeight,
-                      },
-                    ]}
-                  >
-                    <YoutubePlayer
-                      ref={playerRef}
-                      key={videoId}
-                      height={playerHeight}
-                      width={contentWidth}
-                      videoId={videoId}
-                      play={playing}
-                      onChangeState={handlePlayerStateChange}
-                      forceAndroidAutoplay={false}
-                      webViewStyle={styles.youtubeWebView}
-                      webViewProps={{
-                        allowsFullscreenVideo: true,
-                        mediaPlaybackRequiresUserAction: false,
-                        allowsInlineMediaPlayback: true,
-                        javaScriptEnabled: true,
-                        domStorageEnabled: true,
-                        scrollEnabled: false,
-                        bounces: false,
-                      }}
-                      initialPlayerParams={{
-                        controls: true,
-                        preventFullScreen: false,
-                        rel: false,
-                        loop: false,
-                        start: Math.floor(resumeAt),
-                      }}
-                    />
-
-                    <Pressable
-                      accessibilityRole="button"
-                      accessibilityLabel="Rotate video to landscape"
-                      disabled={isChangingOrientation}
-                      onPress={() => void togglePlayerOrientation()}
-                      style={({ pressed }) => [
-                        styles.rotatePlayerButton,
-                        pressed && styles.pressed,
-                        isChangingOrientation && styles.disabled,
-                      ]}
-                    >
-                      {isChangingOrientation ? (
-                        <ActivityIndicator size="small" color={COLORS.white} />
-                      ) : (
-                        <Ionicons
-                          name="scan-outline"
-                          size={19}
-                          color={COLORS.white}
-                        />
-                      )}
-
-                      <Text style={styles.rotatePlayerText}>Rotate</Text>
-                    </Pressable>
-                  </View>
-                ) : (
-                  <EmptyPlayer
-                    message={
-                      selectedVideo && !videoId
-                        ? "The selected lecture has an invalid YouTube URL."
-                        : "No video lectures are currently available."
-                    }
-                  />
-                )}
-
-                {!isLoading && selectedVideo ? (
+              {!isLoading && selectedVideo ? (
+                <View style={styles.videoInformationCard}>
                   <View style={styles.videoInformation}>
                     <Text style={styles.nowPlaying}>Now Playing</Text>
 
@@ -861,27 +872,6 @@ export default function VideoLecturesScreen() {
                       ) : null}
                     </View>
 
-                    <View style={styles.lectureProgressHeader}>
-                      <Text style={styles.lectureProgressLabel}>
-                        Course progress
-                      </Text>
-
-                      <Text style={styles.lectureProgressValue}>
-                        {Math.round(lectureProgress)}%
-                      </Text>
-                    </View>
-
-                    <View style={styles.lectureProgressTrack}>
-                      <View
-                        style={[
-                          styles.lectureProgressFill,
-                          {
-                            width: `${lectureProgress}%`,
-                          },
-                        ]}
-                      />
-                    </View>
-
                     <View style={styles.videoControls}>
                       <Pressable
                         accessibilityRole="button"
@@ -926,8 +916,8 @@ export default function VideoLecturesScreen() {
                       </Pressable>
                     </View>
                   </View>
-                ) : null}
-              </View>
+                </View>
+              ) : null}
 
               <View style={styles.contentHeading}>
                 <View>
@@ -1132,8 +1122,9 @@ const styles = StyleSheet.create({
 
   screen: {
     flex: 1,
+    width: "100%",
+    maxWidth: 892,
     alignSelf: "center",
-    paddingHorizontal: 16,
   },
 
   glowTop: {
@@ -1161,6 +1152,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 12,
+    paddingHorizontal: 16,
   },
 
   navigationButton: {
@@ -1193,21 +1185,42 @@ const styles = StyleSheet.create({
   },
 
   listContent: {
+    paddingHorizontal: 16,
     paddingBottom: 40,
+  },
+
+  fixedPlayerSection: {
+    width: "100%",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingTop: 4,
+    paddingBottom: 8,
+    backgroundColor: COLORS.background,
+    zIndex: 5,
   },
 
   playerCard: {
     overflow: "hidden",
-    borderRadius: 18,
+    borderRadius: 16,
     backgroundColor: COLORS.surface,
     borderWidth: 1,
     borderColor: COLORS.border,
-    marginTop: 8,
   },
 
   playerContainer: {
     overflow: "hidden",
+    alignItems: "center",
+    justifyContent: "center",
     backgroundColor: "#000000",
+  },
+
+  videoInformationCard: {
+    overflow: "hidden",
+    marginTop: 8,
+    borderRadius: 18,
+    backgroundColor: COLORS.surface,
+    borderWidth: 1,
+    borderColor: COLORS.border,
   },
 
   rotatePlayerButton: {
@@ -1250,6 +1263,7 @@ const styles = StyleSheet.create({
 
   emptyPlayer: {
     minHeight: 220,
+    width: "100%",
     alignItems: "center",
     justifyContent: "center",
     paddingHorizontal: 25,

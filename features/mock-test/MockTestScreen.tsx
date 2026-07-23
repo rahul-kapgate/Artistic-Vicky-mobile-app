@@ -575,7 +575,7 @@ function ResultScreen({
               title="Back to Tests"
               variant="secondary"
               icon="arrow-back"
-              onPress={() => router.replace("/(app)/course/mock-tests")}
+              onPress={() => router.replace("/(app)/course/test/mock/1")}
             />
             <AppButton
               title="View Profile"
