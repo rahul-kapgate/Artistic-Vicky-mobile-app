@@ -1,7 +1,8 @@
 import { useAuthStore } from "@/store/authStore";
+import { Ionicons } from "@expo/vector-icons";
 import Constants from "expo-constants";
 import { LinearGradient } from "expo-linear-gradient";
-import { useRouter } from "expo-router";
+import { Href, useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import React from "react";
 import {
@@ -70,6 +71,38 @@ const TOPICS = [
   "Aptitude",
   "3D Visualisation",
   "Portfolio",
+];
+
+const INFORMATION_LINKS: {
+  title: string;
+  icon: keyof typeof Ionicons.glyphMap;
+  pathname: Href;
+}[] = [
+  {
+    title: "About",
+    icon: "information-circle-outline",
+    pathname: "/information/about",
+  },
+  {
+    title: "Contact Us",
+    icon: "chatbubble-ellipses-outline",
+    pathname: "/information/contact-us",
+  },
+  {
+    title: "Privacy Policy",
+    icon: "shield-checkmark-outline",
+    pathname: "/information/privacy-policy",
+  },
+  {
+    title: "Terms of Use",
+    icon: "document-text-outline",
+    pathname: "/information/terms-of-use",
+  },
+  {
+    title: "Refund Policy",
+    icon: "card-outline",
+    pathname: "/information/refund-policy",
+  },
 ];
 
 export default function LandingScreen() {
@@ -376,6 +409,60 @@ export default function LandingScreen() {
                 <Text style={styles.bottomCardArrow}>→</Text>
               </TouchableOpacity>
             </LinearGradient>
+
+            {/* Information and policy links */}
+            <View style={styles.informationSection}>
+              <View style={styles.informationHeader}>
+                <Text style={styles.informationEyebrow}>AV ART ACADEMY</Text>
+
+                <Text style={styles.informationTitle}>About and Support</Text>
+
+                <Text style={styles.informationDescription}>
+                  Learn more about the academy, contact our team and review
+                  important policies.
+                </Text>
+              </View>
+
+              <View style={styles.informationCard}>
+                {INFORMATION_LINKS.map((item, index) => {
+                  const isLast = index === INFORMATION_LINKS.length - 1;
+
+                  return (
+                    <View key={item.title}>
+                      <TouchableOpacity
+                        activeOpacity={0.78}
+                        style={styles.informationRow}
+                        onPress={() => router.push(item.pathname)}
+                      >
+                        <View style={styles.informationIcon}>
+                          <Ionicons
+                            name={item.icon}
+                            size={20}
+                            color="#60A5FA"
+                          />
+                        </View>
+
+                        <Text style={styles.informationLinkText}>
+                          {item.title}
+                        </Text>
+
+                        <View style={styles.informationArrow}>
+                          <Ionicons
+                            name="chevron-forward"
+                            size={18}
+                            color="#8290AF"
+                          />
+                        </View>
+                      </TouchableOpacity>
+
+                      {!isLast ? (
+                        <View style={styles.informationDivider} />
+                      ) : null}
+                    </View>
+                  );
+                })}
+              </View>
+            </View>
 
             <Text style={styles.footerText}>
               Trusted by aspiring artists across India ✨
@@ -988,5 +1075,88 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: "500",
     marginTop: 32,
+  },
+  informationSection: {
+    marginTop: 58,
+  },
+
+  informationHeader: {
+    alignItems: "center",
+    paddingHorizontal: 10,
+    marginBottom: 22,
+  },
+
+  informationEyebrow: {
+    color: "#60A5FA",
+    fontSize: 10,
+    fontWeight: "900",
+    letterSpacing: 1.6,
+    textAlign: "center",
+  },
+
+  informationTitle: {
+    marginTop: 8,
+    color: "#FFFFFF",
+    fontSize: 25,
+    lineHeight: 31,
+    fontWeight: "900",
+    textAlign: "center",
+  },
+
+  informationDescription: {
+    marginTop: 9,
+    maxWidth: 310,
+    color: "#969FBA",
+    fontSize: 13,
+    lineHeight: 21,
+    textAlign: "center",
+  },
+
+  informationCard: {
+    width: "100%",
+    paddingHorizontal: 16,
+    borderRadius: 24,
+    overflow: "hidden",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.09)",
+    backgroundColor: "rgba(14,22,52,0.78)",
+  },
+
+  informationRow: {
+    minHeight: 70,
+    flexDirection: "row",
+    alignItems: "center",
+  },
+
+  informationIcon: {
+    width: 40,
+    height: 40,
+    marginRight: 13,
+    borderRadius: 13,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "rgba(96,165,250,0.1)",
+  },
+
+  informationLinkText: {
+    flex: 1,
+    color: "#E8ECF7",
+    fontSize: 14,
+    fontWeight: "800",
+  },
+
+  informationArrow: {
+    width: 34,
+    height: 34,
+    borderRadius: 12,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "rgba(255,255,255,0.035)",
+  },
+
+  informationDivider: {
+    height: 1,
+    marginLeft: 53,
+    backgroundColor: "rgba(255,255,255,0.065)",
   },
 });
