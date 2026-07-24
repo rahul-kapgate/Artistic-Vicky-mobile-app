@@ -17,7 +17,7 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
-  View
+  View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -237,28 +237,14 @@ export default function LoginScreen() {
   };
 
   const handleForgotPassword = () => {
-    alert(
-      "Forgot Password?",
-      "Password reset is not available inside the app yet. Please contact AV Art Academy support for help accessing your account.",
-      [
-        {
-          text: "Contact Support",
-          style: "default",
-          onPress: () => {
-            router.push("/information/contact-us");
-          },
-        },
-        {
-          text: "Not Now",
-          style: "cancel",
-        },
-      ],
-      {
-        tone: "info",
-        icon: "key-outline",
-        cancelable: true,
+    router.push({
+      pathname: "/(auth)/forgot-password",
+      params: {
+        ...(email.trim() ? { email: email.trim().toLowerCase() } : {}),
+        ...(redirectTo ? { redirectTo } : {}),
+        ...(courseId ? { courseId } : {}),
       },
-    );
+    });
   };
 
   return (

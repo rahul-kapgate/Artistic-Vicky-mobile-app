@@ -28,3 +28,20 @@ export const verifySignupOtp = async (email: string, otp: string) => {
 
   return response.data;
 };
+
+export const initiateForgotPassword = async (email: string) => {
+  const response = await api.post("/auth/forgot-password/initiate", {
+    email,
+  });
+
+  return response.data;
+};
+
+export const verifyForgotPassword = async (payload: {
+  email: string;
+  otp: string;
+  newPassword: string;
+}) => {
+  const response = await api.post("/auth/forgot-password/verify", payload);
+  return response.data;
+};
