@@ -1,15 +1,12 @@
 import { create } from "zustand";
 
-export type User = {
+interface User {
   id: number;
-  user_name: string;
   email: string;
-  mobile: string | null;
+  mobile: string;
   is_admin: boolean;
   avatar_id: number;
-  auth_provider: "local" | "google" | "local_google";
-  profile_picture?: string | null;
-};
+}
 
 interface AuthState {
   user: User | null;

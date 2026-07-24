@@ -1,10 +1,5 @@
 import { useAppAlert } from "@/components/ui/AppAlertProvider";
-import {
-  initiateSignup,
-  loginWithGoogle,
-  verifySignupOtp,
-} from "@/services/auth.service";
-import { useAuthStore } from "@/store/authStore";
+import { initiateSignup, verifySignupOtp } from "@/services/auth.service";
 import { Ionicons } from "@expo/vector-icons";
 import { useMutation } from "@tanstack/react-query";
 import { LinearGradient } from "expo-linear-gradient";
@@ -24,15 +19,6 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-import {
-  GoogleSignin,
-  isErrorWithCode,
-  isSuccessResponse,
-  statusCodes,
-} from "@react-native-google-signin/google-signin";
-
-import * as SecureStore from "expo-secure-store";
-
 type SignupPayload = {
   user_name: string;
   email: string;
@@ -47,8 +33,6 @@ function getSingleParam(value?: string | string[]): string | undefined {
 export default function SignupScreen() {
   const router = useRouter();
   const { alert } = useAppAlert();
-
-  const setUser = useAuthStore((state) => state.setUser);
 
   const params = useLocalSearchParams<{
     redirectTo?: string | string[];
@@ -80,32 +64,6 @@ export default function SignupScreen() {
         ...(courseId ? { courseId } : {}),
       },
     });
-  };
-
-  const redirectAfterGoogleSignup = () => {
-    if (redirectTo === "course-dashboard" && courseId) {
-      router.replace({
-        pathname: "/(app)/course/dashboard",
-        params: {
-          id: courseId,
-        },
-      });
-
-      return;
-    }
-
-    if (redirectTo === "course-detail" && courseId) {
-      router.replace({
-        pathname: "/course/[id]",
-        params: {
-          id: courseId,
-        },
-      });
-
-      return;
-    }
-
-    router.replace("/(app)/home");
   };
 
   const handleBack = () => {
@@ -213,159 +171,6 @@ export default function SignupScreen() {
         {
           tone: "danger",
           icon: "key-outline",
-          cancelable: true,
-        },
-      );
-    },
-  });
-
-  const googleSignupMutation = useMutation({
-    mutationFn: async () => {
-      await GoogleSignin.hasPlayServices({
-        showPlayServicesUpdateDialog: true,
-      });
-
-      const signInResponse = await GoogleSignin.signIn();
-
-      if (!isSuccessResponse(signInResponse)) {
-        throw new Error("Google sign-in was cancelled");
-      }
-
-      const tokens = await GoogleSignin.getTokens();
-
-      if (!tokens.idToken) {
-        throw new Error(
-          "Google did not return an ID token. Check your Web Client ID.",
-        );
-      }
-
-      return loginWithGoogle(tokens.idToken);
-    },
-
-    onSuccess: async (data) => {
-      try {
-        if (!data.accessToken || !data.refreshToken || !data.user) {
-          throw new Error("Google authentication response is incomplete");
-        }
-
-        await Promise.all([
-          SecureStore.setItemAsync("accessToken", data.accessToken),
-          SecureStore.setItemAsync("refreshToken", data.refreshToken),
-          SecureStore.setItemAsync("user", JSON.stringify(data.user)),
-        ]);
-
-        setUser(data.user);
-
-        alert(
-          data.isNewUser ? "Account Created!" : "Welcome Back!",
-          data.isNewUser
-            ? "Your account was created successfully with Google."
-            : "This Google account is already registered. You have been signed in.",
-          [
-            {
-              text: "Continue",
-              style: "default",
-              onPress: redirectAfterGoogleSignup,
-            },
-          ],
-          {
-            tone: "success",
-            icon: "logo-google",
-            cancelable: false,
-          },
-        );
-      } catch (error) {
-        console.error("Unable to save Google session:", error);
-
-        alert(
-          "Session Could Not Be Saved",
-          "Google authentication succeeded, but your session could not be stored securely.",
-          [
-            {
-              text: "Try Again",
-              style: "default",
-              onPress: () => {
-                googleSignupMutation.mutate();
-              },
-            },
-            {
-              text: "Close",
-              style: "cancel",
-            },
-          ],
-          {
-            tone: "danger",
-            icon: "shield-outline",
-            cancelable: true,
-          },
-        );
-      }
-    },
-
-    onError: (error: any) => {
-      console.error("Google signup failed:", error);
-
-      if (isErrorWithCode(error)) {
-        if (error.code === statusCodes.SIGN_IN_CANCELLED) {
-          return;
-        }
-
-        if (error.code === statusCodes.IN_PROGRESS) {
-          alert(
-            "Sign-In In Progress",
-            "A Google sign-in request is already running.",
-            [{ text: "Got It", style: "default" }],
-            {
-              tone: "info",
-              icon: "time-outline",
-              cancelable: true,
-            },
-          );
-
-          return;
-        }
-
-        if (error.code === statusCodes.PLAY_SERVICES_NOT_AVAILABLE) {
-          alert(
-            "Google Play Services Required",
-            "Update or install Google Play Services to continue.",
-            [{ text: "Got It", style: "default" }],
-            {
-              tone: "warning",
-              icon: "logo-google",
-              cancelable: true,
-            },
-          );
-
-          return;
-        }
-      }
-
-      const message =
-        error?.response?.data?.message ||
-        error?.response?.data?.error ||
-        error?.message ||
-        "Unable to continue with Google.";
-
-      alert(
-        "Google Sign-Up Failed",
-        message,
-        [
-          {
-            text: "Try Again",
-            style: "default",
-            onPress: () => {
-              googleSignupMutation.mutate();
-            },
-          },
-          {
-            text: "Close",
-            style: "cancel",
-          },
-        ],
-        {
-          tone: "danger",
-          icon: "logo-google",
           cancelable: true,
         },
       );
@@ -841,58 +646,6 @@ export default function SignupScreen() {
                       style={styles.progressFill}
                     />
                   </View>
-                </View>
-
-                <TouchableOpacity
-                  activeOpacity={0.85}
-                  style={[
-                    styles.googleButton,
-                    (googleSignupMutation.isPending ||
-                      signupMutation.isPending) &&
-                      styles.googleButtonDisabled,
-                  ]}
-                  onPress={() => googleSignupMutation.mutate()}
-                  disabled={
-                    googleSignupMutation.isPending || signupMutation.isPending
-                  }
-                >
-                  {googleSignupMutation.isPending ? (
-                    <View style={styles.googleLoadingRow}>
-                      <ActivityIndicator size="small" color="#FFFFFF" />
-
-                      <Text style={styles.googleButtonText}>
-                        Connecting to Google...
-                      </Text>
-                    </View>
-                  ) : (
-                    <>
-                      <View style={styles.googleIconContainer}>
-                        <Ionicons
-                          name="logo-google"
-                          size={21}
-                          color="#FFFFFF"
-                        />
-                      </View>
-
-                      <Text style={styles.googleButtonText}>
-                        Sign up with Google
-                      </Text>
-
-                      <Ionicons
-                        name="chevron-forward"
-                        size={20}
-                        color="#8290AF"
-                      />
-                    </>
-                  )}
-                </TouchableOpacity>
-
-                <View style={styles.googleDividerRow}>
-                  <View style={styles.googleDivider} />
-
-                  <Text style={styles.googleDividerText}>OR USE EMAIL</Text>
-
-                  <View style={styles.googleDivider} />
                 </View>
 
                 <Text style={styles.label}>Full name</Text>
@@ -1657,65 +1410,5 @@ const styles = StyleSheet.create({
     fontSize: 10,
     lineHeight: 16,
     fontWeight: "800",
-  },
-  googleButton: {
-    minHeight: 57,
-    width: "100%",
-    borderRadius: 17,
-    paddingHorizontal: 13,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.13)",
-    backgroundColor: "rgba(255,255,255,0.055)",
-  },
-
-  googleButtonDisabled: {
-    opacity: 0.6,
-  },
-
-  googleIconContainer: {
-    position: "absolute",
-    left: 13,
-    width: 36,
-    height: 36,
-    borderRadius: 12,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "rgba(255,255,255,0.08)",
-  },
-
-  googleButtonText: {
-    color: "#FFFFFF",
-    fontSize: 14,
-    fontWeight: "900",
-  },
-
-  googleLoadingRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 9,
-  },
-
-  googleDividerRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginTop: 20,
-    marginBottom: 20,
-  },
-
-  googleDivider: {
-    flex: 1,
-    height: 1,
-    backgroundColor: "rgba(255,255,255,0.08)",
-  },
-
-  googleDividerText: {
-    color: "#68748F",
-    fontSize: 9,
-    fontWeight: "900",
-    letterSpacing: 0.8,
-    marginHorizontal: 10,
   },
 });
