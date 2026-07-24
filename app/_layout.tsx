@@ -1,4 +1,5 @@
 import AppAlertProvider from "@/components/ui/AppAlertProvider";
+import "@/lib/googleSignIn";
 import QueryProvider from "@/providers/QueryProvider";
 import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
