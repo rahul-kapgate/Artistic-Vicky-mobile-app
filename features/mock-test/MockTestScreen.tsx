@@ -7,7 +7,6 @@ import { router, useNavigation } from "expo-router";
 import { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
-  Alert,
   FlatList,
   Linking,
   Modal,
@@ -18,11 +17,12 @@ import {
   StyleSheet,
   Text,
   useWindowDimensions,
-  View,
+  View
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { TestScreenSkeleton } from "@/components/skeletons/TestScreenSkeleton";
+import { useAppAlert } from "@/components/ui/AppAlertProvider";
 import { useMockTestSession } from "@/features/mock-test/useMockTestSession";
 import type {
   MockTestOption,
@@ -210,6 +210,7 @@ function RulesScreen({
   questionCount: number;
   onStart: () => void;
 }) {
+  const { alert } = useAppAlert();
   const { width, height } = useWindowDimensions();
   const horizontalPadding = getHorizontalPadding(width);
   const label = type === "mock" ? "Mock Test" : "PYQ Test";
@@ -225,21 +226,30 @@ function RulesScreen({
   ] as const;
 
   const confirmStart = () => {
-    Alert.alert(
+    alert(
       "Ready to begin?",
       "The 60-minute timer starts immediately and cannot be paused.",
       [
-        { text: "Cancel", style: "cancel" },
         {
-          text: "Start Now",
+          text: "Not Yet",
+          style: "cancel",
+        },
+        {
+          text: "Start Test",
+          style: "default",
           onPress: () => {
             void Haptics.notificationAsync(
               Haptics.NotificationFeedbackType.Success,
             );
+
             onStart();
           },
         },
       ],
+      {
+        tone: "info",
+        icon: "play-circle-outline",
+      },
     );
   };
 
@@ -485,6 +495,7 @@ function ResultScreen({
   result: SubmitTestResponse;
   showPromo: boolean;
 }) {
+  const { alert } = useAppAlert();
   const { width, height } = useWindowDimensions();
   const horizontalPadding = getHorizontalPadding(width);
   const percentage = result.totalQuestions
@@ -505,7 +516,20 @@ function ResultScreen({
     try {
       await Linking.openURL(url);
     } catch {
-      Alert.alert("Unable to open WhatsApp", "Please try again later.");
+      alert(
+        "Unable to open WhatsApp",
+        "Please make sure WhatsApp or a browser is available on your device.",
+        [
+          {
+            text: "OK",
+            style: "default",
+          },
+        ],
+        {
+          tone: "warning",
+          icon: "logo-whatsapp",
+        },
+      );
     }
   };
 
@@ -516,9 +540,19 @@ function ResultScreen({
     const attemptId = Number(result.attemptId);
 
     if (!Number.isInteger(attemptId) || attemptId <= 0) {
-      Alert.alert(
+      alert(
         "Result unavailable",
         "The attempt ID was not returned after submitting the test.",
+        [
+          {
+            text: "OK",
+            style: "default",
+          },
+        ],
+        {
+          tone: "danger",
+          icon: "document-text-outline",
+        },
       );
 
       return;
@@ -614,6 +648,7 @@ export function MockTestScreen({
   resourceId,
   showPromo = false,
 }: MockTestScreenProps) {
+  const { alert } = useAppAlert();
   const navigation = useNavigation();
   const { width, height } = useWindowDimensions();
   const horizontalPadding = getHorizontalPadding(width);
@@ -628,32 +663,54 @@ export function MockTestScreen({
   const testIsActive = session.testStarted && !session.result;
 
   usePreventRemove(testIsActive && !canLeave, ({ data }) => {
-    Alert.alert(
-      "Leave test?",
-      "Leaving will submit your current answers and end this attempt.",
+    alert(
+      "Leave this test?",
+      "Leaving now will submit your current answers and end this attempt.",
       [
-        { text: "Stay", style: "cancel" },
+        {
+          text: "Stay in Test",
+          style: "cancel",
+        },
         {
           text: "Exit & Submit",
           style: "destructive",
           onPress: () => {
             void (async () => {
-              const outcome = await session.submit({ allowEmpty: true });
+              const outcome = await session.submit({
+                allowEmpty: true,
+              });
+
               if (!outcome.ok) {
-                Alert.alert(
+                alert(
                   "Submission failed",
                   outcome.error ||
                     "Your progress is saved. Check your connection and try again.",
+                  [
+                    {
+                      text: "OK",
+                      style: "default",
+                    },
+                  ],
+                  {
+                    tone: "danger",
+                    icon: "cloud-offline-outline",
+                  },
                 );
+
                 return;
               }
 
               pendingNavigationAction.current = data.action;
+
               setCanLeave(true);
             })();
           },
         },
       ],
+      {
+        tone: "danger",
+        icon: "exit-outline",
+      },
     );
   });
 
@@ -683,22 +740,38 @@ export function MockTestScreen({
 
   const handleManualSubmit = () => {
     if (session.answeredCount === 0 && session.timeLeft > 0) {
-      Alert.alert(
+      alert(
         "No answers selected",
-        "Attempt at least one question first.",
+        "Please attempt at least one question before submitting.",
+        [
+          {
+            text: "Continue Test",
+            style: "default",
+          },
+        ],
+        {
+          tone: "warning",
+          icon: "create-outline",
+        },
       );
+
       return;
     }
 
-    Alert.alert(
-      "Submit test?",
-      `${session.answeredCount} of ${session.questions.length} questions are answered. You cannot change answers after submission.`,
+    alert(
+      "Submit your test?",
+      `${session.answeredCount} of ${session.questions.length} questions are answered. You cannot change your answers after submission.`,
       [
-        { text: "Review", style: "cancel" },
         {
-          text: "Submit",
+          text: "Review Answers",
+          style: "cancel",
+        },
+        {
+          text: "Submit Test",
+          style: "default",
           onPress: () => {
             setTrackerOpen(false);
+
             void (async () => {
               const outcome = await session.submit({
                 allowEmpty: session.timeLeft === 0,
@@ -708,16 +781,40 @@ export function MockTestScreen({
                 void Haptics.notificationAsync(
                   Haptics.NotificationFeedbackType.Success,
                 );
-              } else {
-                Alert.alert(
-                  "Submission failed",
-                  outcome.error || "Please try again.",
-                );
+
+                return;
               }
+
+              alert(
+                "Submission failed",
+                outcome.error ||
+                  "Your answers are saved. Please check your connection and try again.",
+                [
+                  {
+                    text: "Try Again",
+                    style: "default",
+                    onPress: () => {
+                      void handleManualSubmit();
+                    },
+                  },
+                  {
+                    text: "Close",
+                    style: "cancel",
+                  },
+                ],
+                {
+                  tone: "danger",
+                  icon: "cloud-offline-outline",
+                },
+              );
             })();
           },
         },
       ],
+      {
+        tone: "warning",
+        icon: "checkmark-done-outline",
+      },
     );
   };
 

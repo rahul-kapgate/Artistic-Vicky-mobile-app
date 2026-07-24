@@ -6,7 +6,6 @@ import { StatusBar } from "expo-status-bar";
 import { useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
-  Alert,
   FlatList,
   Pressable,
   RefreshControl,
@@ -15,12 +14,13 @@ import {
   Text,
   TextInput,
   useWindowDimensions,
-  View,
+  View
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { clearTemporaryResourcePdfs } from "@/services/resource-pdf.service";
 
+import { useAppAlert } from "@/components/ui/AppAlertProvider";
 import { getAllResources } from "@/services/resource.service";
 import type { CourseResource, ResourceType } from "@/types/resource";
 
@@ -371,6 +371,7 @@ function ResourceCard({
 }
 
 export default function ResourcesScreen() {
+  const { alert } = useAppAlert();
   const { width, height } = useWindowDimensions();
 
   const [selectedType, setSelectedType] = useState<ResourceFilter>("All");
@@ -457,10 +458,22 @@ export default function ResourcesScreen() {
       resource.mime_type === "application/pdf" || fileName.endsWith(".pdf");
 
     if (!isPdf) {
-      Alert.alert(
-        "Unsupported resource",
+      alert(
+        "Unsupported Resource",
         "Only PDF resources can currently be opened inside the app.",
+        [
+          {
+            text: "Got It",
+            style: "default",
+          },
+        ],
+        {
+          tone: "warning",
+          icon: "document-outline",
+          cancelable: true,
+        },
       );
+
       return;
     }
 
