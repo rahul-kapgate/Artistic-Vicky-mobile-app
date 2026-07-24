@@ -110,6 +110,28 @@ const INFORMATION_LINKS: {
   },
 ];
 
+function getInformationDescription(title: string) {
+  switch (title) {
+    case "About":
+      return "Learn more about AV Art Academy";
+
+    case "Contact Us":
+      return "Call, email or message our support team";
+
+    case "Privacy Policy":
+      return "See how your personal information is handled";
+
+    case "Terms of Use":
+      return "Review the rules for using the application";
+
+    case "Refund Policy":
+      return "Read payment and refund information";
+
+    default:
+      return "";
+  }
+}
+
 export default function LandingScreen() {
   const { isAuthenticated } = useAuthStore();
   const router = useRouter();
@@ -148,6 +170,8 @@ export default function LandingScreen() {
           <ScrollView
             showsVerticalScrollIndicator={false}
             keyboardShouldPersistTaps="handled"
+            nestedScrollEnabled
+            removeClippedSubviews={false}
             contentContainerStyle={styles.container}
           >
             {/* Header */}
@@ -420,7 +444,7 @@ export default function LandingScreen() {
               <View style={styles.informationHeader}>
                 <Text style={styles.informationEyebrow}>AV ART ACADEMY</Text>
 
-                <Text style={styles.informationTitle}>About and Support</Text>
+                <Text style={styles.informationTitle}>About Us</Text>
 
                 <Text style={styles.informationDescription}>
                   Learn more about the academy, contact our team and review
@@ -429,43 +453,41 @@ export default function LandingScreen() {
               </View>
 
               <View style={styles.informationCard}>
-                {INFORMATION_LINKS.map((item, index) => {
-                  const isLast = index === INFORMATION_LINKS.length - 1;
+                {INFORMATION_LINKS.map((item, index) => (
+                  <React.Fragment key={item.pathname}>
+                    <TouchableOpacity
+                      activeOpacity={0.78}
+                      style={styles.informationRow}
+                      onPress={() => router.push(item.pathname)}
+                    >
+                      <View style={styles.informationIcon}>
+                        <Ionicons name={item.icon} size={20} color="#60A5FA" />
+                      </View>
 
-                  return (
-                    <View key={item.title}>
-                      <TouchableOpacity
-                        activeOpacity={0.78}
-                        style={styles.informationRow}
-                        onPress={() => router.push(item.pathname)}
-                      >
-                        <View style={styles.informationIcon}>
-                          <Ionicons
-                            name={item.icon}
-                            size={20}
-                            color="#60A5FA"
-                          />
-                        </View>
-
+                      <View style={styles.informationTextContainer}>
                         <Text style={styles.informationLinkText}>
                           {item.title}
                         </Text>
 
-                        <View style={styles.informationArrow}>
-                          <Ionicons
-                            name="chevron-forward"
-                            size={18}
-                            color="#8290AF"
-                          />
-                        </View>
-                      </TouchableOpacity>
+                        <Text style={styles.informationLinkDescription}>
+                          {getInformationDescription(item.title)}
+                        </Text>
+                      </View>
 
-                      {!isLast ? (
-                        <View style={styles.informationDivider} />
-                      ) : null}
-                    </View>
-                  );
-                })}
+                      <View style={styles.informationArrow}>
+                        <Ionicons
+                          name="chevron-forward"
+                          size={18}
+                          color="#8290AF"
+                        />
+                      </View>
+                    </TouchableOpacity>
+
+                    {index < INFORMATION_LINKS.length - 1 ? (
+                      <View style={styles.informationDivider} />
+                    ) : null}
+                  </React.Fragment>
+                ))}
               </View>
             </View>
 
@@ -493,7 +515,7 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     paddingHorizontal: 20,
     paddingTop: 12,
-    paddingBottom: 32,
+    paddingBottom: 60,
   },
 
   glowTopLeft: {
@@ -1082,10 +1104,12 @@ const styles = StyleSheet.create({
     marginTop: 32,
   },
   informationSection: {
+    width: "100%",
     marginTop: 58,
   },
 
   informationHeader: {
+    width: "100%",
     alignItems: "center",
     paddingHorizontal: 10,
     marginBottom: 22,
@@ -1119,35 +1143,50 @@ const styles = StyleSheet.create({
 
   informationCard: {
     width: "100%",
-    paddingHorizontal: 16,
     borderRadius: 24,
-    overflow: "hidden",
     borderWidth: 1,
     borderColor: "rgba(255,255,255,0.09)",
-    backgroundColor: "rgba(14,22,52,0.78)",
+    backgroundColor: "rgba(14,22,52,0.92)",
+
+    // Do not use overflow hidden here.
+    // It can incorrectly clip rows in some Expo Go Android versions.
   },
 
   informationRow: {
-    minHeight: 70,
+    width: "100%",
+    minHeight: 82,
+    paddingHorizontal: 15,
     flexDirection: "row",
     alignItems: "center",
   },
 
   informationIcon: {
-    width: 40,
-    height: 40,
+    width: 42,
+    height: 42,
     marginRight: 13,
-    borderRadius: 13,
+    borderRadius: 14,
     alignItems: "center",
     justifyContent: "center",
     backgroundColor: "rgba(96,165,250,0.1)",
   },
 
-  informationLinkText: {
+  informationTextContainer: {
     flex: 1,
+    paddingVertical: 12,
+    paddingRight: 8,
+  },
+
+  informationLinkText: {
     color: "#E8ECF7",
     fontSize: 14,
     fontWeight: "800",
+  },
+
+  informationLinkDescription: {
+    marginTop: 4,
+    color: "#8290AF",
+    fontSize: 10,
+    lineHeight: 15,
   },
 
   informationArrow: {
@@ -1161,7 +1200,8 @@ const styles = StyleSheet.create({
 
   informationDivider: {
     height: 1,
-    marginLeft: 53,
+    marginLeft: 70,
+    marginRight: 15,
     backgroundColor: "rgba(255,255,255,0.065)",
   },
 });
