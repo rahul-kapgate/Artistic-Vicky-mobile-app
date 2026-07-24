@@ -1,3 +1,4 @@
+import InformationLinksCard from "@/components/profile/InformationLinksCard";
 import TestHistoryCard from "@/components/profile/TestHistoryCard";
 import { getEnrolledCourses, getProfile } from "@/services/user.service";
 import { useAuthStore } from "@/store/authStore";
@@ -416,6 +417,8 @@ export default function Profile() {
 
         {/* Test history */}
         <TestHistoryCard studentId={profile.id} />
+
+        <InformationLinksCard />
 
         {/* Logout */}
         <TouchableOpacity
