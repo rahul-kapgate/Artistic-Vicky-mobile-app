@@ -6,32 +6,99 @@ import { StyleSheet, View } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 
+const APP_BACKGROUND = "#050A1C";
+
 export default function RootLayout() {
   return (
     <QueryProvider>
-      <GestureHandlerRootView style={styles.flex}>
+      <GestureHandlerRootView style={styles.root}>
         <SafeAreaProvider>
-          <View style={styles.flex}>
-            <StatusBar style="light" />
+          <View style={styles.root}>
+            <StatusBar style="light" backgroundColor={APP_BACKGROUND} />
 
             <Stack
               screenOptions={{
                 headerShown: false,
                 animation: "fade",
+                presentation: "card",
                 contentStyle: {
-                  backgroundColor: "#050A1C",
+                  backgroundColor: APP_BACKGROUND,
                 },
               }}
             >
-              <Stack.Screen name="index" />
-              <Stack.Screen name="landing" />
-              <Stack.Screen name="courses" />
+              {/* Public screens */}
+              <Stack.Screen
+                name="index"
+                options={{
+                  contentStyle: {
+                    backgroundColor: APP_BACKGROUND,
+                  },
+                }}
+              />
 
-              {/* Public course detail */}
-              <Stack.Screen name="course/[id]" />
+              <Stack.Screen
+                name="landing"
+                options={{
+                  animation: "fade",
+                  contentStyle: {
+                    backgroundColor: APP_BACKGROUND,
+                  },
+                }}
+              />
 
-              <Stack.Screen name="(auth)" />
-              <Stack.Screen name="(app)" />
+              <Stack.Screen
+                name="courses"
+                options={{
+                  animation: "slide_from_right",
+                  contentStyle: {
+                    backgroundColor: APP_BACKGROUND,
+                  },
+                }}
+              />
+
+              <Stack.Screen
+                name="course/[id]"
+                options={{
+                  animation: "slide_from_right",
+                  contentStyle: {
+                    backgroundColor: APP_BACKGROUND,
+                  },
+                }}
+              />
+
+              {/* Public information screens */}
+              <Stack.Screen
+                name="information"
+                options={{
+                  animation: "slide_from_right",
+                  presentation: "card",
+                  contentStyle: {
+                    backgroundColor: APP_BACKGROUND,
+                  },
+                }}
+              />
+
+              {/* Authentication */}
+              <Stack.Screen
+                name="(auth)"
+                options={{
+                  animation: "fade",
+                  contentStyle: {
+                    backgroundColor: APP_BACKGROUND,
+                  },
+                }}
+              />
+
+              {/* Protected app */}
+              <Stack.Screen
+                name="(app)"
+                options={{
+                  animation: "fade",
+                  contentStyle: {
+                    backgroundColor: APP_BACKGROUND,
+                  },
+                }}
+              />
             </Stack>
           </View>
         </SafeAreaProvider>
@@ -41,7 +108,8 @@ export default function RootLayout() {
 }
 
 const styles = StyleSheet.create({
-  flex: {
+  root: {
     flex: 1,
+    backgroundColor: APP_BACKGROUND,
   },
 });

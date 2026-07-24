@@ -4,11 +4,11 @@ import { useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import React, { ComponentProps, ReactNode } from "react";
 import {
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -44,6 +44,7 @@ export default function InformationPageLayout({
       <View style={styles.glowBottomRight} />
 
       <ScrollView
+        style={styles.scrollView}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.content}
       >
@@ -278,6 +279,11 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "rgba(196,181,253,0.18)",
     backgroundColor: "rgba(139,92,246,0.1)",
+  },
+
+  scrollView: {
+    flex: 1,
+    backgroundColor: "#050A1C",
   },
 
   updatedText: {

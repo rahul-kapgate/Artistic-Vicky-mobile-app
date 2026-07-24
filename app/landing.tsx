@@ -2,7 +2,7 @@ import { useAuthStore } from "@/store/authStore";
 import { Ionicons } from "@expo/vector-icons";
 import Constants from "expo-constants";
 import { LinearGradient } from "expo-linear-gradient";
-import { Href, useRouter } from "expo-router";
+import { useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import React from "react";
 import {
@@ -76,7 +76,12 @@ const TOPICS = [
 const INFORMATION_LINKS: {
   title: string;
   icon: keyof typeof Ionicons.glyphMap;
-  pathname: Href;
+  pathname:
+    | "/information/about"
+    | "/information/contact-us"
+    | "/information/privacy-policy"
+    | "/information/terms-of-use"
+    | "/information/refund-policy";
 }[] = [
   {
     title: "About",
