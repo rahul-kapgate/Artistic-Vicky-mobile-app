@@ -1,3 +1,4 @@
+import TestHistoryCard from "@/components/profile/TestHistoryCard";
 import { getEnrolledCourses, getProfile } from "@/services/user.service";
 import { useAuthStore } from "@/store/authStore";
 import { formatDate } from "@/utils/date";
@@ -21,6 +22,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 export default function Profile() {
   const router = useRouter();
   const queryClient = useQueryClient();
+  const { user } = useAuthStore();
 
   const logout = useAuthStore((state) => state.logout);
 
@@ -368,6 +370,8 @@ export default function Profile() {
 
           <Ionicons name="chevron-forward" size={22} color="#8290AF" />
         </TouchableOpacity>
+
+        {profile?.id ? <TestHistoryCard studentId={profile.id} /> : null}
 
         {/* Logout */}
         <TouchableOpacity
