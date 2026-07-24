@@ -8,7 +8,6 @@ import { StatusBar } from "expo-status-bar";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
-  Alert,
   AppState,
   FlatList,
   Modal,
@@ -18,11 +17,12 @@ import {
   StyleSheet,
   Text,
   useWindowDimensions,
-  View,
+  View
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { TestScreenSkeleton } from "@/components/skeletons/TestScreenSkeleton";
+import { useAppAlert } from "@/components/ui/AppAlertProvider";
 import {
   getLiveTestSession,
   getPublicLiveTests,
@@ -141,6 +141,7 @@ function OptionItem({
 }
 
 export default function LiveTestScreen() {
+  const { alert } = useAppAlert();
   const params = useLocalSearchParams<{ id?: string | string[] }>();
   const testId = getParam(params.id);
   const navigation = useNavigation();
@@ -259,25 +260,37 @@ export default function LiveTestScreen() {
   const active = Boolean(session && !submittedMessage);
 
   usePreventRemove(active && !canLeave, ({ data }) => {
-    Alert.alert(
+    alert(
       "Leave live test?",
-      "Your current answers will be submitted before leaving.",
+      "Your current answers will be submitted before leaving the test.",
       [
-        { text: "Stay", style: "cancel" },
+        {
+          text: "Stay",
+          style: "cancel",
+        },
         {
           text: "Exit & Submit",
           style: "destructive",
           onPress: () => {
             void (async () => {
               const ok = await performSubmit(false);
-              if (!ok) return;
+
+              if (!ok) {
+                return;
+              }
 
               pendingNavigationAction.current = data.action;
+
               setCanLeave(true);
             })();
           },
         },
       ],
+      {
+        tone: "danger",
+        icon: "exit-outline",
+        cancelable: false,
+      },
     );
   });
 
@@ -347,27 +360,82 @@ export default function LiveTestScreen() {
   }, [introState, meta, now]);
 
   const handleStart = async () => {
-    if (!testId) return;
+    if (!testId || starting) {
+      return;
+    }
 
     try {
       setStarting(true);
+
       const nextSession = await startLiveTest(testId);
+
       applySession(nextSession);
       autoSubmitRef.current = false;
+
       await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     } catch (error: any) {
-      Alert.alert(
+      alert(
         "Unable to start test",
-        error?.response?.data?.message || error?.message || "Please try again.",
+        error?.response?.data?.message ||
+          error?.message ||
+          "The live test could not be started. Please try again.",
+        [
+          {
+            text: "Close",
+            style: "cancel",
+          },
+          {
+            text: "Try Again",
+            style: "default",
+            onPress: () => {
+              void handleStart();
+            },
+          },
+        ],
+        {
+          tone: "danger",
+          icon: "play-circle-outline",
+        },
       );
     } finally {
       setStarting(false);
     }
   };
 
+  const confirmStart = () => {
+    if (starting || introState !== "live") {
+      return;
+    }
+
+    alert(
+      "Start live test?",
+      "Once started, the server-controlled timer begins immediately and cannot be paused.",
+      [
+        {
+          text: "Not Yet",
+          style: "cancel",
+        },
+        {
+          text: "Start Now",
+          style: "default",
+          onPress: () => {
+            void handleStart();
+          },
+        },
+      ],
+      {
+        tone: "info",
+        icon: "play-circle-outline",
+        cancelable: false,
+      },
+    );
+  };
+
   const performSubmit = useCallback(
     async (autoSubmit: boolean): Promise<boolean> => {
-      if (!testId || submitting) return false;
+      if (!testId || submitting) {
+        return false;
+      }
 
       try {
         setSubmitting(true);
@@ -384,9 +452,11 @@ export default function LiveTestScreen() {
         setSubmittedMessage(
           response.message ||
             (autoSubmit
-              ? "Time expired. Your live test was auto-submitted."
+              ? "Time expired. Your live test was automatically submitted."
               : "Your live test was submitted successfully."),
         );
+
+        setTrackerOpen(false);
 
         await Haptics.notificationAsync(
           Haptics.NotificationFeedbackType.Success,
@@ -394,31 +464,70 @@ export default function LiveTestScreen() {
 
         return true;
       } catch (error: any) {
-        Alert.alert(
+        alert(
           "Submission failed",
           error?.response?.data?.message ||
             error?.message ||
-            "Please check your connection and try again.",
+            "Please check your internet connection and try again.",
+          [
+            {
+              text: "Close",
+              style: "cancel",
+            },
+            {
+              text: "Try Again",
+              style: "default",
+              onPress: () => {
+                void performSubmit(autoSubmit);
+              },
+            },
+          ],
+          {
+            tone: "danger",
+            icon: "cloud-offline-outline",
+          },
         );
+
         return false;
       } finally {
         setSubmitting(false);
       }
     },
-    [submitting, testId],
+    [alert, submitting, testId],
   );
 
   const confirmSubmit = () => {
-    Alert.alert(
+    if (submitting) {
+      return;
+    }
+
+    const unansweredMessage =
+      unansweredCount > 0
+        ? ` ${unansweredCount} questions are still unanswered.`
+        : "";
+
+    alert(
       "Submit live test?",
-      `${answeredCount} of ${questions.length} questions are answered. You cannot change answers after submission.`,
+      `${answeredCount} of ${questions.length} questions are answered.${unansweredMessage} You cannot change your answers after submission.`,
       [
-        { text: "Review", style: "cancel" },
         {
-          text: "Submit",
-          onPress: () => void performSubmit(false),
+          text: "Review Answers",
+          style: "cancel",
+        },
+        {
+          text: "Submit Test",
+          style: "default",
+          onPress: () => {
+            setTrackerOpen(false);
+            void performSubmit(false);
+          },
         },
       ],
+      {
+        tone: unansweredCount > 0 ? "warning" : "info",
+        icon: "checkmark-done-outline",
+        cancelable: false,
+      },
     );
   };
 
@@ -587,16 +696,7 @@ export default function LiveTestScreen() {
 
               <Pressable
                 disabled={starting || introState !== "live"}
-                onPress={() => {
-                  Alert.alert(
-                    "Confirm Start",
-                    "Once started, the server timer cannot be paused.",
-                    [
-                      { text: "Cancel", style: "cancel" },
-                      { text: "Start Now", onPress: () => void handleStart() },
-                    ],
-                  );
-                }}
+                onPress={confirmStart}
                 style={[
                   styles.primaryButton,
                   (starting || introState !== "live") && styles.disabled,

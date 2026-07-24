@@ -1,3 +1,4 @@
+import { useAppAlert } from "@/components/ui/AppAlertProvider";
 import { initiateSignup, verifySignupOtp } from "@/services/auth.service";
 import { Ionicons } from "@expo/vector-icons";
 import { useMutation } from "@tanstack/react-query";
@@ -7,7 +8,6 @@ import { StatusBar } from "expo-status-bar";
 import React, { useState } from "react";
 import {
   ActivityIndicator,
-  Alert,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
@@ -32,6 +32,7 @@ function getSingleParam(value?: string | string[]): string | undefined {
 
 export default function SignupScreen() {
   const router = useRouter();
+  const { alert } = useAppAlert();
 
   const params = useLocalSearchParams<{
     redirectTo?: string | string[];
@@ -91,10 +92,33 @@ export default function SignupScreen() {
     onError: (error: any) => {
       console.error("Signup failed:", error);
 
-      Alert.alert(
-        "Unable to Create Account",
+      const message =
         error?.response?.data?.message ||
-          "Failed to send OTP. Please try again.",
+        error?.response?.data?.error ||
+        error?.message ||
+        "Failed to send the verification code. Please try again.";
+
+      alert(
+        "Unable to Create Account",
+        message,
+        [
+          {
+            text: "Try Again",
+            style: "default",
+            onPress: () => {
+              handleSignup();
+            },
+          },
+          {
+            text: "Close",
+            style: "cancel",
+          },
+        ],
+        {
+          tone: "danger",
+          icon: "person-add-outline",
+          cancelable: true,
+        },
       );
     },
   });
@@ -103,24 +127,52 @@ export default function SignupScreen() {
     mutationFn: () => verifySignupOtp(email.trim().toLowerCase(), otp),
 
     onSuccess: () => {
-      Alert.alert(
-        "Account Created 🎉",
-        "Your account has been created successfully. Log in to continue.",
+      alert(
+        "Account Created!",
+        "Your AV Art Academy account has been created successfully. Log in to continue.",
         [
           {
-            text: "Login",
+            text: "Continue to Login",
+            style: "default",
             onPress: navigateToLogin,
           },
         ],
+        {
+          tone: "success",
+          icon: "checkmark-circle-outline",
+          cancelable: false,
+        },
       );
     },
 
     onError: (error: any) => {
       console.error("OTP verification failed:", error);
 
-      Alert.alert(
-        "Invalid OTP",
-        error?.response?.data?.message || "The OTP is incorrect or expired.",
+      const message =
+        error?.response?.data?.message ||
+        error?.response?.data?.error ||
+        error?.message ||
+        "The verification code is incorrect or has expired.";
+
+      alert(
+        "Invalid Verification Code",
+        message,
+        [
+          {
+            text: "Try Again",
+            style: "default",
+          },
+          {
+            text: "Resend Code",
+            style: "cancel",
+            onPress: handleResendOtp,
+          },
+        ],
+        {
+          tone: "danger",
+          icon: "key-outline",
+          cancelable: true,
+        },
       );
     },
   });
@@ -130,6 +182,10 @@ export default function SignupScreen() {
   };
 
   const handleSignup = () => {
+    if (signupMutation.isPending) {
+      return;
+    }
+
     const trimmedName = userName.trim();
     const trimmedEmail = email.trim().toLowerCase();
     const trimmedMobile = mobile.trim();
@@ -141,42 +197,100 @@ export default function SignupScreen() {
       !password ||
       !confirmPassword
     ) {
-      Alert.alert(
-        "Missing Information",
-        "Please complete all required fields.",
+      alert(
+        "Complete All Fields",
+        "Please provide your name, email address, mobile number, password and password confirmation.",
+        [
+          {
+            text: "Got It",
+            style: "default",
+          },
+        ],
+        {
+          tone: "warning",
+          icon: "create-outline",
+          cancelable: true,
+        },
       );
 
       return;
     }
 
     if (!isValidEmail(trimmedEmail)) {
-      Alert.alert("Invalid Email", "Please enter a valid email address.");
+      alert(
+        "Invalid Email Address",
+        "Please enter a valid email address, such as name@example.com.",
+        [
+          {
+            text: "Correct Email",
+            style: "default",
+          },
+        ],
+        {
+          tone: "warning",
+          icon: "mail-outline",
+          cancelable: true,
+        },
+      );
 
       return;
     }
 
-    if (trimmedMobile.length !== 10) {
-      Alert.alert(
+    if (!/^\d{10}$/.test(trimmedMobile)) {
+      alert(
         "Invalid Mobile Number",
-        "Please enter a valid 10 digit mobile number.",
+        "Please enter a valid 10-digit Indian mobile number.",
+        [
+          {
+            text: "Correct Number",
+            style: "default",
+          },
+        ],
+        {
+          tone: "warning",
+          icon: "call-outline",
+          cancelable: true,
+        },
       );
 
       return;
     }
 
     if (password.length < 6) {
-      Alert.alert(
-        "Weak Password",
-        "Password should be at least 6 characters long.",
+      alert(
+        "Password Too Short",
+        "Your password must contain at least 6 characters.",
+        [
+          {
+            text: "Update Password",
+            style: "default",
+          },
+        ],
+        {
+          tone: "warning",
+          icon: "lock-closed-outline",
+          cancelable: true,
+        },
       );
 
       return;
     }
 
     if (password !== confirmPassword) {
-      Alert.alert(
-        "Password Mismatch",
-        "Password and confirm password do not match.",
+      alert(
+        "Passwords Do Not Match",
+        "The password and confirmation password must be identical.",
+        [
+          {
+            text: "Check Passwords",
+            style: "default",
+          },
+        ],
+        {
+          tone: "warning",
+          icon: "shield-checkmark-outline",
+          cancelable: true,
+        },
       );
 
       return;
@@ -193,8 +307,28 @@ export default function SignupScreen() {
   };
 
   const handleVerifyOtp = () => {
-    if (otp.length !== 6) {
-      Alert.alert("Invalid OTP", "Please enter the complete 6 digit OTP.");
+    if (verifyOtpMutation.isPending) {
+      return;
+    }
+
+    const normalizedOtp = otp.replace(/\D/g, "");
+
+    if (normalizedOtp.length !== 6) {
+      alert(
+        "Enter Complete Code",
+        "Please enter all 6 digits from the verification email.",
+        [
+          {
+            text: "Got It",
+            style: "default",
+          },
+        ],
+        {
+          tone: "warning",
+          icon: "keypad-outline",
+          cancelable: true,
+        },
+      );
 
       return;
     }
@@ -203,16 +337,39 @@ export default function SignupScreen() {
   };
 
   const handleResendOtp = () => {
-    if (signupMutation.isPending) {
+    if (signupMutation.isPending || verifyOtpMutation.isPending) {
       return;
     }
 
-    signupMutation.mutate({
-      user_name: userName.trim(),
-      email: email.trim().toLowerCase(),
-      mobile: mobile.trim(),
-      password,
-    });
+    signupMutation.mutate(
+      {
+        user_name: userName.trim(),
+        email: email.trim().toLowerCase(),
+        mobile: mobile.trim(),
+        password,
+      },
+      {
+        onSuccess: () => {
+          setOtp("");
+
+          alert(
+            "Verification Code Sent",
+            `A new 6-digit verification code was sent to ${email.trim().toLowerCase()}.`,
+            [
+              {
+                text: "Enter Code",
+                style: "default",
+              },
+            ],
+            {
+              tone: "success",
+              icon: "mail-unread-outline",
+              cancelable: true,
+            },
+          );
+        },
+      },
+    );
   };
 
   if (step === "otp") {
@@ -698,10 +855,25 @@ export default function SignupScreen() {
                 </View>
               </View>
 
-              <Text style={styles.termsText}>
-                By continuing, you agree to the AV Art Academy account and
-                learning policies.
-              </Text>
+              <View style={styles.policyRow}>
+                <Text style={styles.termsText}>
+                  By continuing, you agree to the AV Art Academy{" "}
+                </Text>
+
+                <TouchableOpacity
+                  onPress={() => router.push("/information/terms-of-use")}
+                >
+                  <Text style={styles.policyLink}>Terms of Use</Text>
+                </TouchableOpacity>
+
+                <Text style={styles.termsText}> and </Text>
+
+                <TouchableOpacity
+                  onPress={() => router.push("/information/privacy-policy")}
+                >
+                  <Text style={styles.policyLink}>Privacy Policy</Text>
+                </TouchableOpacity>
+              </View>
             </View>
           </ScrollView>
         </KeyboardAvoidingView>
@@ -1102,8 +1274,6 @@ const styles = StyleSheet.create({
     textAlign: "center",
     fontSize: 10,
     lineHeight: 16,
-    paddingHorizontal: 20,
-    marginTop: 20,
   },
 
   otpCard: {
@@ -1225,5 +1395,20 @@ const styles = StyleSheet.create({
     fontSize: 10,
     lineHeight: 16,
     marginLeft: 8,
+  },
+  policyRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 20,
+    marginTop: 20,
+  },
+
+  policyLink: {
+    color: "#4CC3FF",
+    fontSize: 10,
+    lineHeight: 16,
+    fontWeight: "800",
   },
 });

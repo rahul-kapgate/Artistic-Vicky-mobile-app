@@ -1,3 +1,4 @@
+import { useAppAlert } from "@/components/ui/AppAlertProvider";
 import { loginUser } from "@/services/auth.service";
 import { useAuthStore } from "@/store/authStore";
 import { Ionicons } from "@expo/vector-icons";
@@ -9,7 +10,6 @@ import { StatusBar } from "expo-status-bar";
 import React, { useState } from "react";
 import {
   ActivityIndicator,
-  Alert,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
@@ -17,7 +17,7 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
-  View,
+  View
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -28,6 +28,7 @@ function getSingleParam(value?: string | string[]): string | undefined {
 }
 
 export default function LoginScreen() {
+  const { alert } = useAppAlert();
   const router = useRouter();
 
   const params = useLocalSearchParams<{
@@ -88,9 +89,27 @@ export default function LoginScreen() {
       } catch (error) {
         console.error("Unable to save login session:", error);
 
-        Alert.alert(
-          "Login Error",
-          "You logged in successfully, but your session could not be saved.",
+        alert(
+          "Session Could Not Be Saved",
+          "You logged in successfully, but your session could not be stored securely on this device.",
+          [
+            {
+              text: "Try Again",
+              style: "default",
+              onPress: () => {
+                loginMutation.mutate();
+              },
+            },
+            {
+              text: "Close",
+              style: "cancel",
+            },
+          ],
+          {
+            tone: "danger",
+            icon: "shield-outline",
+            cancelable: true,
+          },
         );
       }
     },
@@ -98,18 +117,93 @@ export default function LoginScreen() {
     onError: (error: any) => {
       console.error("Login failed:", error);
 
-      Alert.alert(
+      const errorMessage =
+        error?.response?.data?.message ||
+        error?.response?.data?.error ||
+        error?.message ||
+        "Invalid email or password.";
+
+      alert(
         "Login Failed",
-        error?.response?.data?.message || "Invalid email or password.",
+        errorMessage,
+        [
+          {
+            text: "Try Again",
+            style: "default",
+          },
+        ],
+        {
+          tone: "danger",
+          icon: "lock-closed-outline",
+          cancelable: true,
+        },
       );
     },
   });
 
   const handleLogin = () => {
+    if (loginMutation.isPending) {
+      return;
+    }
+
     const trimmedEmail = email.trim().toLowerCase();
 
-    if (!trimmedEmail || !password) {
-      Alert.alert("Required Fields", "Please enter your email and password.");
+    if (!trimmedEmail && !password) {
+      alert(
+        "Email and Password Required",
+        "Please enter your email address and password to continue.",
+        [
+          {
+            text: "Got It",
+            style: "default",
+          },
+        ],
+        {
+          tone: "warning",
+          icon: "create-outline",
+          cancelable: true,
+        },
+      );
+
+      return;
+    }
+
+    if (!trimmedEmail) {
+      alert(
+        "Email Required",
+        "Please enter the email address associated with your account.",
+        [
+          {
+            text: "Got It",
+            style: "default",
+          },
+        ],
+        {
+          tone: "warning",
+          icon: "mail-outline",
+          cancelable: true,
+        },
+      );
+
+      return;
+    }
+
+    if (!password) {
+      alert(
+        "Password Required",
+        "Please enter your account password to continue.",
+        [
+          {
+            text: "Got It",
+            style: "default",
+          },
+        ],
+        {
+          tone: "warning",
+          icon: "lock-closed-outline",
+          cancelable: true,
+        },
+      );
 
       return;
     }
@@ -143,7 +237,28 @@ export default function LoginScreen() {
   };
 
   const handleForgotPassword = () => {
-    Alert.alert("Forgot Password", "Password reset will be available soon.");
+    alert(
+      "Forgot Password?",
+      "Password reset is not available inside the app yet. Please contact AV Art Academy support for help accessing your account.",
+      [
+        {
+          text: "Contact Support",
+          style: "default",
+          onPress: () => {
+            router.push("/information/contact-us");
+          },
+        },
+        {
+          text: "Not Now",
+          style: "cancel",
+        },
+      ],
+      {
+        tone: "info",
+        icon: "key-outline",
+        cancelable: true,
+      },
+    );
   };
 
   return (

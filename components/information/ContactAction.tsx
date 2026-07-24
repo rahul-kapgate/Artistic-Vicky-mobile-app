@@ -1,12 +1,12 @@
+import { useAppAlert } from "@/components/ui/AppAlertProvider";
 import { Ionicons } from "@expo/vector-icons";
 import React, { ComponentProps } from "react";
 import {
-    Alert,
-    Linking,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  Linking,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
 
 type IoniconName = ComponentProps<typeof Ionicons>["name"];
@@ -26,6 +26,8 @@ export default function ContactAction({
   color,
   url,
 }: ContactActionProps) {
+  const { alert } = useAppAlert();
+
   const handlePress = async () => {
     try {
       await Linking.openURL(url);
@@ -34,17 +36,39 @@ export default function ContactAction({
 
       let message = "This action could not be opened on your device.";
 
+      let alertIcon: IoniconName = "alert-circle-outline";
+
       if (url.startsWith("tel:")) {
         message =
           "No phone application was found. Calling may not work inside an Android emulator. Please test it on a physical device.";
+
+        alertIcon = "call-outline";
       } else if (url.startsWith("mailto:")) {
         message = "No email application was found on your device.";
+
+        alertIcon = "mail-outline";
       } else if (url.includes("wa.me")) {
         message =
           "Unable to open WhatsApp. Please make sure WhatsApp or a web browser is available.";
+
+        alertIcon = "logo-whatsapp";
       }
 
-      Alert.alert("Unable to open", message);
+      alert(
+        "Unable to Open",
+        message,
+        [
+          {
+            text: "Got It",
+            style: "default",
+          },
+        ],
+        {
+          tone: "warning",
+          icon: alertIcon,
+          cancelable: true,
+        },
+      );
     }
   };
 
@@ -52,7 +76,7 @@ export default function ContactAction({
     <TouchableOpacity
       activeOpacity={0.82}
       style={styles.card}
-      onPress={handlePress}
+      onPress={() => void handlePress()}
     >
       <View
         style={[
