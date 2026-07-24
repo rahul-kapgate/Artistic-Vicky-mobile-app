@@ -22,7 +22,6 @@ import { SafeAreaView } from "react-native-safe-area-context";
 export default function Profile() {
   const router = useRouter();
   const queryClient = useQueryClient();
-  const { user } = useAuthStore();
 
   const logout = useAuthStore((state) => state.logout);
 
@@ -46,7 +45,7 @@ export default function Profile() {
   } = useQuery({
     queryKey: ["enrolled-courses", profile?.id],
     queryFn: () => getEnrolledCourses(profile!.id),
-    enabled: !!profile?.id,
+    enabled: Boolean(profile?.id),
   });
 
   const handleLogout = async () => {
@@ -73,9 +72,10 @@ export default function Profile() {
   };
 
   const handleRetry = async () => {
-    await refetchProfile();
+    const profileResult = await refetchProfile();
+    const refreshedProfile = profileResult.data;
 
-    if (profile?.id) {
+    if (refreshedProfile?.id) {
       await refetchCourses();
     }
   };
@@ -83,9 +83,6 @@ export default function Profile() {
   const handleOpenCourses = () => {
     router.push("/(app)/home");
   };
-
-  const userInitial =
-    profile?.user_name?.trim()?.charAt(0)?.toUpperCase() || "S";
 
   const userName = profile?.user_name?.trim() || "Student";
   const userEmail = profile?.email || "Not available";
@@ -157,6 +154,7 @@ export default function Profile() {
     <SafeAreaView style={styles.container} edges={["top", "bottom"]}>
       <StatusBar style="light" backgroundColor="#050A1C" />
 
+      {/* Background glows */}
       <View style={styles.glowTopRight} />
       <View style={styles.glowCenterLeft} />
       <View style={styles.glowBottomRight} />
@@ -178,6 +176,7 @@ export default function Profile() {
 
           <View style={styles.headerTitleContainer}>
             <Text style={styles.headerTitle}>My Profile</Text>
+
             <Text style={styles.headerSubtitle}>
               Account and learning details
             </Text>
@@ -186,9 +185,9 @@ export default function Profile() {
           <View style={styles.headerPlaceholder} />
         </View>
 
-        {/* Profile Hero */}
+        {/* Profile hero */}
         <LinearGradient
-          colors={["#172554", "#312E81", "#581C87"]}
+          colors={["#111C3E", "#20205B", "#3B1B64"]}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
           style={styles.profileHero}
@@ -196,34 +195,66 @@ export default function Profile() {
           <View style={styles.heroDecorationOne} />
           <View style={styles.heroDecorationTwo} />
 
-          <LinearGradient
-            colors={["#FF3FA7", "#A855F7", "#33D6FF"]}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={styles.avatarGradient}
-          >
-            <View style={styles.avatar}>
-              <Text style={styles.avatarText}>{userInitial}</Text>
+          <View style={styles.profileTopRow}>
+            {/* Replaced first-letter avatar with profile icon */}
+            <LinearGradient
+              colors={["#4CC3FF", "#6366F1", "#A855F7"]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.profileIconGradient}
+            >
+              <View style={styles.profileIconInner}>
+                <Ionicons name="person-outline" size={34} color="#FFFFFF" />
+              </View>
+            </LinearGradient>
+
+            <View style={styles.profileMainContent}>
+              <View style={styles.nameRow}>
+                <Text numberOfLines={2} style={styles.name}>
+                  {userName}
+                </Text>
+
+                {profile.is_admin ? (
+                  <View style={styles.adminBadge}>
+                    <Ionicons
+                      name="shield-checkmark"
+                      size={11}
+                      color="#FDE68A"
+                    />
+
+                    <Text style={styles.adminBadgeText}>ADMIN</Text>
+                  </View>
+                ) : null}
+              </View>
+
+              <View style={styles.emailRow}>
+                <Ionicons name="mail-outline" size={14} color="#AAB6D3" />
+
+                <Text numberOfLines={1} style={styles.email}>
+                  {userEmail}
+                </Text>
+              </View>
+
+              <View style={styles.profileMetaRow}>
+                <View style={styles.activeBadge}>
+                  <View style={styles.activeDot} />
+
+                  <Text style={styles.activeBadgeText}>ACTIVE STUDENT</Text>
+                </View>
+
+                <View style={styles.joinedBadge}>
+                  <Ionicons name="calendar-outline" size={12} color="#C4B5FD" />
+
+                  <Text style={styles.joinedBadgeText}>
+                    Joined {joinedDate}
+                  </Text>
+                </View>
+              </View>
             </View>
-          </LinearGradient>
-
-          <Text style={styles.name}>{userName}</Text>
-
-          <View style={styles.emailRow}>
-            <Ionicons name="mail-outline" size={15} color="#B8C4DE" />
-
-            <Text numberOfLines={1} style={styles.email}>
-              {userEmail}
-            </Text>
-          </View>
-
-          <View style={styles.activeBadge}>
-            <View style={styles.activeDot} />
-            <Text style={styles.activeBadgeText}>ACTIVE STUDENT</Text>
           </View>
         </LinearGradient>
 
-        {/* Quick Stats */}
+        {/* Quick stats */}
         <View style={styles.statsRow}>
           <TouchableOpacity
             activeOpacity={0.85}
@@ -244,11 +275,11 @@ export default function Profile() {
           </TouchableOpacity>
 
           <View style={styles.statCard}>
-            <View style={styles.statIconContainer}>
+            <View style={[styles.statIconContainer, styles.memberStatIcon]}>
               <Ionicons name="calendar-outline" size={23} color="#A78BFA" />
             </View>
 
-            <Text numberOfLines={1} style={styles.statDateValue}>
+            <Text numberOfLines={2} style={styles.statDateValue}>
               {joinedDate}
             </Text>
 
@@ -256,9 +287,10 @@ export default function Profile() {
           </View>
         </View>
 
-        {/* Account Information */}
+        {/* Account information */}
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionEyebrow}>PERSONAL DETAILS</Text>
+
           <Text style={styles.sectionTitle}>Account Information</Text>
         </View>
 
@@ -283,6 +315,7 @@ export default function Profile() {
 
             <View style={styles.informationContent}>
               <Text style={styles.label}>Email Address</Text>
+
               <Text numberOfLines={2} style={styles.value}>
                 {userEmail}
               </Text>
@@ -349,7 +382,14 @@ export default function Profile() {
           </View>
         </View>
 
-        {/* My Courses Button */}
+        {/* Learning actions */}
+        <View style={styles.actionSectionHeader}>
+          <Text style={styles.sectionEyebrow}>LEARNING</Text>
+
+          <Text style={styles.actionSectionTitle}>Your Learning Activity</Text>
+        </View>
+
+        {/* My Courses */}
         <TouchableOpacity
           activeOpacity={0.85}
           style={styles.myCoursesButton}
@@ -360,18 +400,22 @@ export default function Profile() {
               <Ionicons name="library-outline" size={22} color="#4CC3FF" />
             </View>
 
-            <View>
+            <View style={styles.myCoursesContent}>
               <Text style={styles.myCoursesTitle}>My Courses</Text>
-              <Text style={styles.myCoursesDescription}>
+
+              <Text numberOfLines={1} style={styles.myCoursesDescription}>
                 Continue your enrolled lessons
               </Text>
             </View>
           </View>
 
-          <Ionicons name="chevron-forward" size={22} color="#8290AF" />
+          <View style={styles.myCoursesArrow}>
+            <Ionicons name="chevron-forward" size={20} color="#4CC3FF" />
+          </View>
         </TouchableOpacity>
 
-        {profile?.id ? <TestHistoryCard studentId={profile.id} /> : null}
+        {/* Test history */}
+        <TestHistoryCard studentId={profile.id} />
 
         {/* Logout */}
         <TouchableOpacity
@@ -410,8 +454,8 @@ const styles = StyleSheet.create({
 
   loadingContainer: {
     flex: 1,
-    justifyContent: "center",
     alignItems: "center",
+    justifyContent: "center",
     backgroundColor: "#050A1C",
   },
 
@@ -428,16 +472,16 @@ const styles = StyleSheet.create({
   },
 
   loadingText: {
+    marginTop: 14,
     color: "#9CA7BF",
     fontSize: 14,
     fontWeight: "600",
-    marginTop: 14,
   },
 
   errorContainer: {
     flex: 1,
-    justifyContent: "center",
     alignItems: "center",
+    justifyContent: "center",
     paddingHorizontal: 24,
     backgroundColor: "#050A1C",
   },
@@ -445,10 +489,10 @@ const styles = StyleSheet.create({
   errorIconContainer: {
     width: 78,
     height: 78,
+    marginBottom: 18,
     borderRadius: 39,
     alignItems: "center",
     justifyContent: "center",
-    marginBottom: 18,
     backgroundColor: "rgba(255,107,154,0.12)",
   },
 
@@ -460,12 +504,12 @@ const styles = StyleSheet.create({
   },
 
   errorDescription: {
+    marginTop: 9,
+    marginBottom: 22,
     color: "#AAB2CC",
     fontSize: 14,
     lineHeight: 22,
     textAlign: "center",
-    marginTop: 9,
-    marginBottom: 22,
   },
 
   retryButton: {
@@ -484,8 +528,8 @@ const styles = StyleSheet.create({
   },
 
   backTextButton: {
-    paddingVertical: 14,
     marginTop: 8,
+    paddingVertical: 14,
   },
 
   backText: {
@@ -516,8 +560,8 @@ const styles = StyleSheet.create({
 
   glowBottomRight: {
     position: "absolute",
-    bottom: -150,
     right: -150,
+    bottom: -150,
     width: 350,
     height: 350,
     borderRadius: 350,
@@ -525,16 +569,16 @@ const styles = StyleSheet.create({
   },
 
   content: {
-    paddingHorizontal: 20,
     paddingTop: 12,
     paddingBottom: 50,
+    paddingHorizontal: 20,
   },
 
   header: {
     minHeight: 58,
+    marginBottom: 24,
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: 24,
   },
 
   backButton: {
@@ -560,10 +604,10 @@ const styles = StyleSheet.create({
   },
 
   headerSubtitle: {
+    marginTop: 3,
     color: "#7F8AA5",
     fontSize: 10,
     fontWeight: "600",
-    marginTop: 3,
   },
 
   headerPlaceholder: {
@@ -571,10 +615,10 @@ const styles = StyleSheet.create({
   },
 
   profileHero: {
-    borderRadius: 28,
-    paddingHorizontal: 20,
-    paddingVertical: 28,
-    alignItems: "center",
+    width: "100%",
+    minHeight: 150,
+    padding: 20,
+    borderRadius: 25,
     overflow: "hidden",
     borderWidth: 1,
     borderColor: "rgba(255,255,255,0.1)",
@@ -582,108 +626,167 @@ const styles = StyleSheet.create({
 
   heroDecorationOne: {
     position: "absolute",
-    top: -45,
-    right: -25,
-    width: 130,
-    height: 130,
-    borderRadius: 130,
-    backgroundColor: "rgba(255,255,255,0.06)",
+    top: -70,
+    right: -45,
+    width: 180,
+    height: 180,
+    borderRadius: 180,
+    backgroundColor: "rgba(76,195,255,0.07)",
   },
 
   heroDecorationTwo: {
     position: "absolute",
-    bottom: -55,
-    left: -35,
-    width: 150,
-    height: 150,
-    borderRadius: 150,
-    backgroundColor: "rgba(51,214,255,0.06)",
+    bottom: -80,
+    left: -50,
+    width: 190,
+    height: 190,
+    borderRadius: 190,
+    backgroundColor: "rgba(168,85,247,0.08)",
   },
 
-  avatarGradient: {
-    width: 104,
-    height: 104,
-    borderRadius: 34,
-    padding: 3,
+  profileTopRow: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+
+  profileIconGradient: {
+    width: 76,
+    height: 76,
+    padding: 2,
+    borderRadius: 24,
     alignItems: "center",
     justifyContent: "center",
+    shadowColor: "#4CC3FF",
+    shadowOpacity: 0.2,
+    shadowRadius: 14,
+    elevation: 5,
   },
 
-  avatar: {
+  profileIconInner: {
     width: "100%",
     height: "100%",
-    borderRadius: 31,
+    borderRadius: 22,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#101836",
+    backgroundColor: "#111936",
   },
 
-  avatarText: {
-    color: "#FFFFFF",
-    fontSize: 39,
-    fontWeight: "900",
+  profileMainContent: {
+    flex: 1,
+    marginLeft: 16,
+  },
+
+  nameRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    flexWrap: "wrap",
+    gap: 8,
   },
 
   name: {
+    flexShrink: 1,
     color: "#FFFFFF",
-    fontSize: 27,
+    fontSize: 21,
+    lineHeight: 27,
     fontWeight: "900",
-    textAlign: "center",
-    marginTop: 18,
+  },
+
+  adminBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 5,
+    borderRadius: 999,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    backgroundColor: "rgba(245,158,11,0.13)",
+    borderWidth: 1,
+    borderColor: "rgba(253,230,138,0.24)",
+  },
+
+  adminBadgeText: {
+    color: "#FDE68A",
+    fontSize: 8,
+    fontWeight: "900",
+    letterSpacing: 0.6,
   },
 
   emailRow: {
     maxWidth: "100%",
+    marginTop: 7,
     flexDirection: "row",
     alignItems: "center",
-    marginTop: 8,
   },
 
   email: {
-    flexShrink: 1,
-    color: "#B8C4DE",
-    fontSize: 13,
-    marginLeft: 7,
+    flex: 1,
+    marginLeft: 6,
+    color: "#AAB6D3",
+    fontSize: 12,
+  },
+
+  profileMetaRow: {
+    marginTop: 14,
+    flexDirection: "row",
+    alignItems: "center",
+    flexWrap: "wrap",
+    gap: 7,
   },
 
   activeBadge: {
+    paddingHorizontal: 9,
+    paddingVertical: 6,
+    borderRadius: 999,
     flexDirection: "row",
     alignItems: "center",
-    paddingHorizontal: 12,
-    paddingVertical: 7,
-    borderRadius: 999,
-    marginTop: 17,
-    backgroundColor: "rgba(34,197,94,0.12)",
+    backgroundColor: "rgba(34,197,94,0.11)",
     borderWidth: 1,
-    borderColor: "rgba(34,197,94,0.25)",
+    borderColor: "rgba(34,197,94,0.2)",
   },
 
   activeDot: {
-    width: 7,
-    height: 7,
-    borderRadius: 7,
-    marginRight: 7,
+    width: 6,
+    height: 6,
+    marginRight: 6,
+    borderRadius: 6,
     backgroundColor: "#22C55E",
   },
 
   activeBadgeText: {
     color: "#BBF7D0",
-    fontSize: 9,
+    fontSize: 8,
     fontWeight: "900",
-    letterSpacing: 0.8,
+    letterSpacing: 0.7,
+  },
+
+  joinedBadge: {
+    paddingHorizontal: 9,
+    paddingVertical: 6,
+    borderRadius: 999,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    backgroundColor: "rgba(139,92,246,0.11)",
+    borderWidth: 1,
+    borderColor: "rgba(196,181,253,0.17)",
+  },
+
+  joinedBadgeText: {
+    color: "#C4B5FD",
+    fontSize: 8,
+    fontWeight: "800",
   },
 
   statsRow: {
+    marginTop: 18,
     flexDirection: "row",
     gap: 12,
-    marginTop: 18,
   },
 
   statCard: {
     flex: 1,
-    minHeight: 145,
-    borderRadius: 21,
+    minHeight: 138,
     padding: 15,
+    borderRadius: 21,
     alignItems: "center",
     justifyContent: "center",
     borderWidth: 1,
@@ -694,11 +797,15 @@ const styles = StyleSheet.create({
   statIconContainer: {
     width: 43,
     height: 43,
+    marginBottom: 10,
     borderRadius: 14,
     alignItems: "center",
     justifyContent: "center",
-    marginBottom: 10,
     backgroundColor: "rgba(76,195,255,0.1)",
+  },
+
+  memberStatIcon: {
+    backgroundColor: "rgba(167,139,250,0.1)",
   },
 
   statValue: {
@@ -709,21 +816,22 @@ const styles = StyleSheet.create({
 
   statDateValue: {
     color: "#FFFFFF",
-    fontSize: 14,
+    fontSize: 13,
+    lineHeight: 18,
     fontWeight: "900",
     textAlign: "center",
   },
 
   statLabel: {
+    marginTop: 6,
     color: "#8E99B3",
     fontSize: 11,
     fontWeight: "600",
     textAlign: "center",
-    marginTop: 6,
   },
 
   sectionHeader: {
-    marginTop: 36,
+    marginTop: 34,
     marginBottom: 17,
   },
 
@@ -735,16 +843,16 @@ const styles = StyleSheet.create({
   },
 
   sectionTitle: {
+    marginTop: 5,
     color: "#FFFFFF",
     fontSize: 23,
     fontWeight: "900",
-    marginTop: 5,
   },
 
   card: {
     width: "100%",
-    borderRadius: 23,
     paddingHorizontal: 18,
+    borderRadius: 23,
     borderWidth: 1,
     borderColor: "rgba(76,195,255,0.12)",
     backgroundColor: "rgba(15,23,53,0.95)",
@@ -759,10 +867,10 @@ const styles = StyleSheet.create({
   informationIcon: {
     width: 43,
     height: 43,
+    marginRight: 13,
     borderRadius: 14,
     alignItems: "center",
     justifyContent: "center",
-    marginRight: 13,
     backgroundColor: "rgba(76,195,255,0.1)",
   },
 
@@ -777,11 +885,11 @@ const styles = StyleSheet.create({
   },
 
   value: {
+    marginTop: 4,
     color: "#FFFFFF",
     fontSize: 14,
     lineHeight: 20,
     fontWeight: "800",
-    marginTop: 4,
   },
 
   inlineLoader: {
@@ -790,10 +898,10 @@ const styles = StyleSheet.create({
   },
 
   retryInlineText: {
+    marginTop: 4,
     color: "#4CC3FF",
     fontSize: 13,
     fontWeight: "800",
-    marginTop: 4,
   },
 
   divider: {
@@ -801,11 +909,23 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(255,255,255,0.07)",
   },
 
+  actionSectionHeader: {
+    marginTop: 30,
+    marginBottom: 13,
+  },
+
+  actionSectionTitle: {
+    marginTop: 4,
+    color: "#FFFFFF",
+    fontSize: 19,
+    fontWeight: "900",
+  },
+
   myCoursesButton: {
+    width: "100%",
     minHeight: 78,
-    borderRadius: 21,
     paddingHorizontal: 16,
-    marginTop: 18,
+    borderRadius: 21,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
@@ -815,6 +935,7 @@ const styles = StyleSheet.create({
   },
 
   myCoursesLeft: {
+    flex: 1,
     flexDirection: "row",
     alignItems: "center",
   },
@@ -822,11 +943,15 @@ const styles = StyleSheet.create({
   myCoursesIcon: {
     width: 45,
     height: 45,
+    marginRight: 13,
     borderRadius: 15,
     alignItems: "center",
     justifyContent: "center",
-    marginRight: 13,
     backgroundColor: "rgba(76,195,255,0.1)",
+  },
+
+  myCoursesContent: {
+    flex: 1,
   },
 
   myCoursesTitle: {
@@ -836,16 +961,26 @@ const styles = StyleSheet.create({
   },
 
   myCoursesDescription: {
+    marginTop: 4,
     color: "#8995AF",
     fontSize: 11,
-    marginTop: 4,
+  },
+
+  myCoursesArrow: {
+    width: 37,
+    height: 37,
+    marginLeft: 10,
+    borderRadius: 13,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "rgba(76,195,255,0.07)",
   },
 
   logoutButton: {
     width: "100%",
     minHeight: 56,
-    borderRadius: 17,
     marginTop: 26,
+    borderRadius: 17,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
@@ -868,9 +1003,9 @@ const styles = StyleSheet.create({
   },
 
   footerText: {
+    marginTop: 25,
     color: "#6F7A95",
     fontSize: 11,
     textAlign: "center",
-    marginTop: 25,
   },
 });
