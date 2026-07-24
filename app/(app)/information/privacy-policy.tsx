@@ -21,7 +21,7 @@ export default function PrivacyPolicyScreen() {
 
       <InformationSection
         title="2. Information We Collect"
-        icon="database-outline"
+        icon="desktop"
         accentColor="#A78BFA"
         items={[
           {

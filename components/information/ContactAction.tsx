@@ -1,6 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import React, { ComponentProps } from "react";
 import {
+    Alert,
     Linking,
     StyleSheet,
     Text,
@@ -26,14 +27,25 @@ export default function ContactAction({
   url,
 }: ContactActionProps) {
   const handlePress = async () => {
-    const supported = await Linking.canOpenURL(url);
+    try {
+      await Linking.openURL(url);
+    } catch (error) {
+      console.error(`Unable to open URL: ${url}`, error);
 
-    if (!supported) {
-      console.warn(`Unable to open URL: ${url}`);
-      return;
+      let message = "This action could not be opened on your device.";
+
+      if (url.startsWith("tel:")) {
+        message =
+          "No phone application was found. Calling may not work inside an Android emulator. Please test it on a physical device.";
+      } else if (url.startsWith("mailto:")) {
+        message = "No email application was found on your device.";
+      } else if (url.includes("wa.me")) {
+        message =
+          "Unable to open WhatsApp. Please make sure WhatsApp or a web browser is available.";
+      }
+
+      Alert.alert("Unable to open", message);
     }
-
-    await Linking.openURL(url);
   };
 
   return (
@@ -42,12 +54,20 @@ export default function ContactAction({
       style={styles.card}
       onPress={handlePress}
     >
-      <View style={[styles.iconContainer, { backgroundColor: `${color}18` }]}>
+      <View
+        style={[
+          styles.iconContainer,
+          {
+            backgroundColor: `${color}18`,
+          },
+        ]}
+      >
         <Ionicons name={icon} size={22} color={color} />
       </View>
 
       <View style={styles.content}>
         <Text style={styles.title}>{title}</Text>
+
         <Text numberOfLines={2} style={styles.value}>
           {value}
         </Text>
