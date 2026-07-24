@@ -85,24 +85,52 @@ function normalizeSubmitResponse(value: unknown): SubmitTestResponse {
     throw new Error("The submit API returned an invalid response.");
   }
 
-  const score = Number(value.score);
+  if (value.success === false) {
+    throw new Error(
+      typeof value.message === "string"
+        ? value.message
+        : "Failed to submit the test.",
+    );
+  }
+
+  const rawData = value.data;
+
+  if (!isRecord(rawData)) {
+    throw new Error(
+      "The test was submitted, but the attempt details were not returned.",
+    );
+  }
+
+  const attemptId = Number(rawData.id);
+  const score = Number(value.score ?? rawData.score ?? 0);
+
   const totalQuestions = Number(
     value.totalQuestions ?? value.total_questions ?? 0,
   );
 
-  if (!Number.isFinite(score) || !Number.isFinite(totalQuestions)) {
-    throw new Error("The result payload is incomplete.");
+  if (!Number.isInteger(attemptId) || attemptId <= 0) {
+    throw new Error(
+      "The test was submitted, but the attempt ID was not returned.",
+    );
+  }
+
+  if (!Number.isFinite(score)) {
+    throw new Error("The submitted test score is invalid.");
+  }
+
+  if (!Number.isInteger(totalQuestions) || totalQuestions < 0) {
+    throw new Error("The submitted test question count is invalid.");
   }
 
   return {
-    success: value.success !== false,
+    success: true,
     message:
-      typeof value.message === "string"
-        ? value.message
+      typeof value.message === "string" && value.message.trim()
+        ? value.message.trim()
         : "Test submitted successfully.",
     score,
     totalQuestions,
-    data: value.data,
+    attemptId,
   };
 }
 
@@ -159,24 +187,27 @@ export async function submitTestAttempt({
   resourceId,
   answers,
 }: SubmitTestParams): Promise<SubmitTestResponse> {
+  const normalizedResourceId = Number(resourceId);
+
+  if (!Number.isInteger(normalizedResourceId) || normalizedResourceId <= 0) {
+    throw new Error("A valid test ID is required.");
+  }
+
   const endpoint =
     type === "mock" ? "/mock-test/submit" : "/pyq-mock-test/attempt/submit";
 
   const payload =
     type === "mock"
       ? {
-          course_id: Number(resourceId),
+          course_id: normalizedResourceId,
           answers,
         }
       : {
-          paper_id: Number(resourceId),
+          paper_id: normalizedResourceId,
           answers,
         };
 
-  if (!Number.isFinite(Number(resourceId))) {
-    throw new Error("A valid test ID is required.");
-  }
-
   const response = await api.post<unknown>(endpoint, payload);
+
   return normalizeSubmitResponse(response.data);
 }

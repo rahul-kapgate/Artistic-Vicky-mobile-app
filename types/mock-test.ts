@@ -27,7 +27,7 @@ export interface SubmitTestResponse {
   message: string;
   score: number;
   totalQuestions: number;
-  data?: unknown;
+  attemptId: number;
 }
 
 export interface PersistedTestSession {

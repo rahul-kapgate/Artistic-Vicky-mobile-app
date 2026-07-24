@@ -512,6 +512,27 @@ function ResultScreen({
   const courseMessage = `Hi, I completed the free mock test and scored ${result.score}/${result.totalQuestions}. I am interested in the MAH AAC CET Entrance Exam Preparation Course. Please share the details.`;
   const paidMockMessage = `Hi, I completed the free mock test and scored ${result.score}/${result.totalQuestions}. I am interested in the paid mock test for better evaluation. Please share the details.`;
 
+  const handleViewResult = () => {
+    const attemptId = Number(result.attemptId);
+
+    if (!Number.isInteger(attemptId) || attemptId <= 0) {
+      Alert.alert(
+        "Result unavailable",
+        "The attempt ID was not returned after submitting the test.",
+      );
+
+      return;
+    }
+
+    router.replace({
+      pathname: "/course/result/[type]/[attemptId]",
+      params: {
+        type,
+        attemptId: String(attemptId),
+      },
+    });
+  };
+
   return (
     <SafeAreaView style={styles.safeArea} edges={["top", "bottom"]}>
       <StatusBar barStyle="light-content" />
@@ -572,10 +593,9 @@ function ResultScreen({
 
           <View style={styles.resultActions}>
             <AppButton
-              title="Back to Tests"
-              variant="secondary"
-              icon="arrow-back"
-              onPress={() => router.replace("/(app)/course/test/mock/1")}
+              title="View Result"
+              icon="document-text-outline"
+              onPress={handleViewResult}
             />
             <AppButton
               title="View Profile"
