@@ -3,25 +3,26 @@ import { LinearGradient } from "expo-linear-gradient";
 import { router, useLocalSearchParams } from "expo-router";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
-    ActivityIndicator,
-    Image,
-    Pressable,
-    ScrollView,
-    StyleSheet,
-    Text,
-    View,
+  ActivityIndicator,
+  Image,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import {
-    AttemptDetails,
-    AttemptOption,
-    AttemptQuestionDetail,
-    AttemptType,
-    getAttemptDetails,
+  AttemptDetails,
+  AttemptOption,
+  AttemptQuestionDetail,
+  AttemptType,
+  getAttemptDetails,
 } from "@/services/attempt.service";
 
 type ReviewFilter = "all" | "correct" | "incorrect";
+const TOTAL_TEST_MARKS = 40;
 
 function getParamValue(
   value: string | string[] | undefined,
@@ -282,11 +283,16 @@ export default function AttemptResultScreen() {
   );
 
   const accuracy = useMemo(() => {
-    if (!details?.total_questions) {
+    if (!details) {
       return 0;
     }
 
-    return Math.round((details.score / details.total_questions) * 100);
+    const score = Number(details.score) || 0;
+
+    return Math.max(
+      0,
+      Math.min(100, Math.round((score / TOTAL_TEST_MARKS) * 100)),
+    );
   }, [details]);
 
   const filteredQuestions = useMemo(() => {
@@ -367,7 +373,7 @@ export default function AttemptResultScreen() {
 
           <View style={styles.scoreDetails}>
             <Text style={styles.scoreTitle}>
-              {details.score} out of {details.total_questions}
+              {details.score} out of {TOTAL_TEST_MARKS} marks
             </Text>
 
             <Text style={styles.scoreSubtitle}>

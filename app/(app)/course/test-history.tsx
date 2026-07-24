@@ -3,23 +3,24 @@ import { LinearGradient } from "expo-linear-gradient";
 import { router, useLocalSearchParams } from "expo-router";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
-    ActivityIndicator,
-    FlatList,
-    Pressable,
-    RefreshControl,
-    StyleSheet,
-    Text,
-    View,
+  ActivityIndicator,
+  FlatList,
+  Pressable,
+  RefreshControl,
+  StyleSheet,
+  Text,
+  View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import {
-    AttemptType,
-    getStudentAttempts,
-    TestAttempt,
+  AttemptType,
+  getStudentAttempts,
+  TestAttempt,
 } from "@/services/attempt.service";
 
 type DateRange = "all" | "7" | "30" | "90";
+const TOTAL_TEST_MARKS = 40;
 
 function getParamValue(
   value: string | string[] | undefined,
@@ -28,15 +29,11 @@ function getParamValue(
 }
 
 function getAccuracy(attempt: TestAttempt): number {
-  const totalAnswered = attempt.answers?.length ?? 0;
-
-  if (totalAnswered === 0) {
-    return 0;
-  }
+  const score = Number(attempt.score) || 0;
 
   return Math.max(
     0,
-    Math.min(100, Math.round((attempt.score / totalAnswered) * 100)),
+    Math.min(100, Math.round((score / TOTAL_TEST_MARKS) * 100)),
   );
 }
 
@@ -154,10 +151,10 @@ function AttemptCard({
           ]}
         >
           <Text style={[styles.scoreValue, { color: scoreColors.text }]}>
-            {attempt.score}
+            {attempt.score}/{TOTAL_TEST_MARKS}
           </Text>
 
-          <Text style={styles.scoreLabel}>score</Text>
+          <Text style={styles.scoreLabel}>marks</Text>
         </View>
       </View>
 
@@ -186,8 +183,7 @@ function AttemptCard({
           <Ionicons name="list-outline" size={15} color="#94A3B8" />
 
           <Text style={styles.questionsText}>
-            {totalAnswered} {totalAnswered === 1 ? "question" : "questions"}{" "}
-            answered
+            {totalAnswered}/{TOTAL_TEST_MARKS} questions answered
           </Text>
         </View>
 
