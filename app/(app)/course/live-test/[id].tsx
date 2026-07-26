@@ -17,9 +17,12 @@ import {
   StyleSheet,
   Text,
   useWindowDimensions,
-  View
+  View,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import {
+  SafeAreaView,
+  useSafeAreaInsets,
+} from "react-native-safe-area-context";
 
 import { TestScreenSkeleton } from "@/components/skeletons/TestScreenSkeleton";
 import { useAppAlert } from "@/components/ui/AppAlertProvider";
@@ -146,6 +149,9 @@ export default function LiveTestScreen() {
   const testId = getParam(params.id);
   const navigation = useNavigation();
   const { width, height } = useWindowDimensions();
+  const insets = useSafeAreaInsets();
+
+  const trackerFooterBottomPadding = Math.max(insets.bottom, 16);
 
   const isTablet = width >= 768;
   const isCompact = width < 360 || height < 700;
@@ -959,12 +965,15 @@ export default function LiveTestScreen() {
         visible={trackerOpen}
         animationType="slide"
         presentationStyle={Platform.OS === "ios" ? "pageSheet" : "fullScreen"}
+        navigationBarTranslucent={false}
+        statusBarTranslucent={false}
         onRequestClose={() => setTrackerOpen(false)}
       >
-        <SafeAreaView style={styles.trackerSafeArea} edges={["top", "bottom"]}>
+        <SafeAreaView style={styles.trackerSafeArea} edges={["top"]}>
           <View style={styles.trackerHeader}>
             <View>
               <Text style={styles.trackerTitle}>Question Tracker</Text>
+
               <Text style={styles.trackerSubtitle}>
                 {answeredCount} answered · {questions.length - answeredCount}{" "}
                 remaining
@@ -984,7 +993,12 @@ export default function LiveTestScreen() {
             data={questions}
             numColumns={trackerColumns}
             keyExtractor={(item) => String(item.id)}
-            contentContainerStyle={styles.trackerGrid}
+            contentContainerStyle={[
+              styles.trackerGrid,
+              {
+                paddingBottom: 100 + trackerFooterBottomPadding,
+              },
+            ]}
             renderItem={({ item, index }) => {
               const selected = answers[item.id] !== undefined;
               const activeCell = index === currentIndex;
@@ -1020,11 +1034,24 @@ export default function LiveTestScreen() {
             }}
           />
 
-          <View style={styles.trackerFooter}>
-            <Pressable onPress={confirmSubmit} style={styles.primaryButton}>
-              <Text style={styles.primaryButtonText}>
-                {submitting ? "Submitting…" : "Submit Live Test"}
-              </Text>
+          <View
+            style={[
+              styles.trackerFooter,
+              {
+                paddingBottom: trackerFooterBottomPadding,
+              },
+            ]}
+          >
+            <Pressable
+              disabled={submitting}
+              onPress={confirmSubmit}
+              style={[styles.primaryButton, submitting && styles.disabled]}
+            >
+              {submitting ? (
+                <ActivityIndicator color={COLORS.white} />
+              ) : (
+                <Text style={styles.primaryButtonText}>Submit Live Test</Text>
+              )}
             </Pressable>
           </View>
         </SafeAreaView>
@@ -1451,7 +1478,7 @@ const styles = StyleSheet.create({
   },
   trackerTitle: { color: COLORS.white, fontSize: 18, fontWeight: "900" },
   trackerSubtitle: { color: COLORS.muted, fontSize: 12, marginTop: 3 },
-  trackerGrid: { padding: 16, paddingBottom: 110 },
+  trackerGrid: { padding: 16 },
   trackerCell: {
     aspectRatio: 1,
     marginRight: 9,
@@ -1477,7 +1504,8 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    padding: 16,
+    paddingHorizontal: 16,
+    paddingTop: 16,
     backgroundColor: COLORS.panelSoft,
     borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: COLORS.border,

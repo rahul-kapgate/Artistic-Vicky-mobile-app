@@ -17,9 +17,12 @@ import {
   StyleSheet,
   Text,
   useWindowDimensions,
-  View
+  View,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import {
+  SafeAreaView,
+  useSafeAreaInsets,
+} from "react-native-safe-area-context";
 
 import { TestScreenSkeleton } from "@/components/skeletons/TestScreenSkeleton";
 import { useAppAlert } from "@/components/ui/AppAlertProvider";
@@ -388,32 +391,43 @@ function QuestionTrackerModal({
   onSubmit: () => void;
 }) {
   const { width } = useWindowDimensions();
+  const insets = useSafeAreaInsets();
+
   const answeredCount = Object.keys(answers).length;
   const trackerColumns = getTrackerColumnCount(width);
   const trackerGap = width < SMALL_PHONE_BREAKPOINT ? 7 : 9;
   const trackerHorizontalPadding = getHorizontalPadding(width);
+
   const trackerContentWidth =
     Math.min(width, TRACKER_CONTENT_MAX_WIDTH) - trackerHorizontalPadding * 2;
+
   const trackerCellSize = Math.floor(
     (trackerContentWidth - trackerGap * (trackerColumns - 1)) / trackerColumns,
   );
+
+  // Keeps the submit button above Android navigation buttons.
+  const footerBottomPadding = Math.max(insets.bottom, 16);
 
   return (
     <Modal
       visible={visible}
       animationType="slide"
       presentationStyle={Platform.OS === "ios" ? "pageSheet" : "fullScreen"}
+      navigationBarTranslucent={false}
+      statusBarTranslucent={false}
       onRequestClose={onClose}
     >
-      <SafeAreaView style={styles.trackerSafeArea} edges={["top", "bottom"]}>
+      <SafeAreaView style={styles.trackerSafeArea} edges={["top"]}>
         <View style={styles.trackerHeader}>
           <View>
             <Text style={styles.trackerTitle}>Question Tracker</Text>
+
             <Text style={styles.trackerSubtitle}>
               {answeredCount} answered · {questions.length - answeredCount}{" "}
               remaining
             </Text>
           </View>
+
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="Close tracker"
@@ -436,9 +450,17 @@ function QuestionTrackerModal({
           style={styles.trackerList}
           contentContainerStyle={[
             styles.trackerGrid,
-            { paddingHorizontal: trackerHorizontalPadding },
+            {
+              paddingHorizontal: trackerHorizontalPadding,
+            },
           ]}
-          columnWrapperStyle={[styles.trackerColumn, { gap: trackerGap }]}
+          columnWrapperStyle={[
+            styles.trackerColumn,
+            {
+              gap: trackerGap,
+            },
+          ]}
+          showsVerticalScrollIndicator={false}
           renderItem={({ item, index }) => {
             const answered = answers[item.id] !== undefined;
             const active = index === currentIndex;
@@ -446,7 +468,9 @@ function QuestionTrackerModal({
             return (
               <Pressable
                 accessibilityRole="button"
-                accessibilityLabel={`Question ${index + 1}${answered ? ", answered" : ""}`}
+                accessibilityLabel={`Question ${index + 1}${
+                  answered ? ", answered" : ""
+                }`}
                 onPress={() => onJump(index)}
                 style={[
                   styles.trackerCell,
@@ -473,7 +497,14 @@ function QuestionTrackerModal({
           }}
         />
 
-        <View style={styles.trackerFooter}>
+        <View
+          style={[
+            styles.trackerFooter,
+            {
+              paddingBottom: footerBottomPadding,
+            },
+          ]}
+        >
           <AppButton
             title={submitting ? "Submitting…" : "Submit Test"}
             icon="checkmark-done-outline"
@@ -1257,11 +1288,15 @@ const styles = StyleSheet.create({
   trackerSubtitle: { color: COLORS.muted, fontSize: 12, marginTop: 3 },
   trackerTimerRow: { alignItems: "center", paddingVertical: 14 },
   trackerList: {
+    flex: 1,
     width: "100%",
     maxWidth: TRACKER_CONTENT_MAX_WIDTH,
     alignSelf: "center",
   },
-  trackerGrid: { paddingVertical: 16, paddingBottom: 110 },
+  trackerGrid: {
+    paddingTop: 16,
+    paddingBottom: 16,
+  },
   trackerColumn: { marginBottom: 9, justifyContent: "flex-start" },
   trackerCell: {
     borderRadius: 13,
@@ -1283,11 +1318,8 @@ const styles = StyleSheet.create({
   trackerCellTextAnswered: { color: COLORS.green },
   trackerCellTextActive: { color: COLORS.cyan },
   trackerFooter: {
-    position: "absolute",
-    left: 0,
-    right: 0,
-    bottom: 0,
-    padding: 16,
+    paddingHorizontal: 16,
+    paddingTop: 16,
     backgroundColor: COLORS.panelSoft,
     borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: COLORS.border,

@@ -6,14 +6,16 @@ import { StatusBar } from "expo-status-bar";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
+  BackHandler,
   FlatList,
+  Platform,
   Pressable,
   RefreshControl,
   StyleSheet,
   Text,
   TextInput,
   useWindowDimensions,
-  View,
+  View
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import YoutubePlayer, {
@@ -514,6 +516,29 @@ export default function VideoLecturesScreen() {
       setIsChangingOrientation(false);
     }
   }, [isChangingOrientation, isLandscape, saveCurrentPlaybackPosition]);
+
+  useEffect(() => {
+    if (Platform.OS !== "android" || !isLandscape) {
+      return;
+    }
+
+    const backSubscription = BackHandler.addEventListener(
+      "hardwareBackPress",
+      () => {
+        // Consume the Android back action while the video is landscape.
+        // Return to portrait instead of leaving the screen.
+        if (!isChangingOrientation) {
+          void togglePlayerOrientation();
+        }
+
+        return true;
+      },
+    );
+
+    return () => {
+      backSubscription.remove();
+    };
+  }, [isLandscape, isChangingOrientation, togglePlayerOrientation]);
 
   const toggleAllSections = useCallback(() => {
     setExpandedSections(() => {
