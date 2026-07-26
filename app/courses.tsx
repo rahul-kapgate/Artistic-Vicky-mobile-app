@@ -1,3 +1,4 @@
+import { useNetwork } from "@/providers/NetworkProvider";
 import { getAllCourses } from "@/services/course.service";
 import { useAuthStore } from "@/store/authStore";
 import { Course } from "@/types/course";
@@ -144,14 +145,42 @@ export default function CoursesScreen() {
 
   const {
     data: courses = [],
-    isLoading,
+    isPending,
     isError,
     refetch,
     isRefetching,
+    fetchStatus,
   } = useQuery<Course[]>({
     queryKey: ["public-courses"],
     queryFn: getAllCourses,
+
+    /*
+     * Only queries explicitly marked this way are saved
+     * in AsyncStorage by QueryProvider.
+     */
+    meta: {
+      persist: true,
+    },
+
+    staleTime: 10 * 60 * 1000,
   });
+
+  const { isOnline, refreshNetworkStatus } = useNetwork();
+
+  const hasCachedCourses = courses.length > 0;
+
+  const showOfflineEmptyState =
+    !isOnline &&
+    !hasCachedCourses &&
+    (isPending || fetchStatus === "paused" || isError);
+
+  const handleRetry = async () => {
+    const online = await refreshNetworkStatus();
+
+    if (online) {
+      await refetch();
+    }
+  };
 
   const handleOpenCourse = (course: Course) => {
     router.push({
@@ -251,15 +280,35 @@ export default function CoursesScreen() {
               </Text>
             </View>
 
-            {!isLoading && !isError && (
+            {isError && (
               <View style={styles.courseCountBadge}>
                 <Text style={styles.courseCountText}>{courses.length}</Text>
               </View>
             )}
           </View>
 
-          {/* Loading */}
-          {isLoading ? (
+          {showOfflineEmptyState ? (
+            <View style={styles.errorCard}>
+              <Text style={styles.errorIcon}>!</Text>
+
+              <Text style={styles.errorTitle}>
+                Internet connection required
+              </Text>
+
+              <Text style={styles.errorDescription}>
+                Courses haven’t been saved on this device yet. Connect to the
+                internet once to load them for offline viewing.
+              </Text>
+
+              <TouchableOpacity
+                activeOpacity={0.85}
+                style={styles.retryButton}
+                onPress={handleRetry}
+              >
+                <Text style={styles.retryButtonText}>Check Connection</Text>
+              </TouchableOpacity>
+            </View>
+          ) : isPending ? (
             <View style={styles.loadingContainer}>
               <ActivityIndicator size="large" color="#60A5FA" />
 
@@ -267,14 +316,14 @@ export default function CoursesScreen() {
                 Loading available courses...
               </Text>
             </View>
-          ) : isError ? (
+          ) : isError && !hasCachedCourses ? (
             <View style={styles.errorCard}>
               <Text style={styles.errorIcon}>!</Text>
 
               <Text style={styles.errorTitle}>Unable to load courses</Text>
 
               <Text style={styles.errorDescription}>
-                Please check your connection and try again.
+                Something went wrong while contacting the server.
               </Text>
 
               <TouchableOpacity
@@ -300,6 +349,12 @@ export default function CoursesScreen() {
             </View>
           ) : (
             <View style={styles.courseList}>
+              {!isOnline && (
+                <Text style={styles.savedContentText}>
+                  You’re offline — showing the latest saved course information.
+                </Text>
+              )}
+
               {courses.map((course) => (
                 <CourseCard
                   key={course.id}
@@ -902,5 +957,12 @@ const styles = StyleSheet.create({
     textAlign: "center",
     fontSize: 11,
     marginTop: 32,
+  },
+  savedContentText: {
+    marginBottom: 12,
+    color: "#F59E0B",
+    fontSize: 13,
+    fontWeight: "600",
+    textAlign: "center",
   },
 });

@@ -1,3 +1,4 @@
+import { onlineManager } from "@tanstack/react-query";
 import axios, { AxiosError, InternalAxiosRequestConfig } from "axios";
 import { router } from "expo-router";
 import * as SecureStore from "expo-secure-store";
@@ -15,6 +16,18 @@ const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL?.replace(/\/+$/, "");
 
 if (!API_BASE_URL) {
   throw new Error("Missing EXPO_PUBLIC_API_URL");
+}
+export class OfflineError extends Error {
+  readonly code = "OFFLINE";
+
+  constructor() {
+    super("No internet connection");
+    this.name = "OfflineError";
+  }
+}
+
+export function isOfflineError(error: unknown): error is OfflineError {
+  return error instanceof OfflineError;
 }
 
 /**
@@ -63,6 +76,10 @@ api.interceptors.request.use(
   async (
     config: InternalAxiosRequestConfig,
   ): Promise<InternalAxiosRequestConfig> => {
+    if (!onlineManager.isOnline()) {
+      throw new OfflineError();
+    }
+
     const accessToken = await SecureStore.getItemAsync("accessToken");
 
     if (accessToken) {
@@ -177,6 +194,14 @@ api.interceptors.response.use(
 
   async (error: AxiosError<any>) => {
     const originalRequest = error.config as RetryConfig | undefined;
+
+    if (isOfflineError(error)) {
+      return Promise.reject(error);
+    }
+
+    if (!axios.isAxiosError(error)) {
+      return Promise.reject(error);
+    }
 
     const status = error.response?.status;
     const requestUrl = originalRequest?.url ?? "";
