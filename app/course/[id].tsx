@@ -13,6 +13,7 @@ import React from "react";
 import {
   Dimensions,
   Image,
+  Linking,
   ScrollView,
   StyleSheet,
   Text,
@@ -23,6 +24,9 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 const { width } = Dimensions.get("window");
 const CARD_WIDTH = (width - 56) / 2;
+
+const WEBSITE_URL = "https://artisticvickey.in/";
+const WHATSAPP_NUMBER = "919325217691";
 
 export default function CourseDetailScreen() {
   const router = useRouter();
@@ -45,9 +49,6 @@ export default function CourseDetailScreen() {
     checkToken();
   }, []);
 
-  /*
-   * Fetch course details only after enrollment has been confirmed.
-   */
   const {
     data: course,
     isLoading: courseLoading,
@@ -121,9 +122,6 @@ export default function CourseDetailScreen() {
     }
   };
 
-  /*
-   * Invalid or missing route parameter.
-   */
   if (!courseId) {
     return (
       <SafeAreaView style={styles.center} edges={["top", "bottom"]}>
@@ -150,9 +148,6 @@ export default function CourseDetailScreen() {
     );
   }
 
-  /*
-   * Course detail request failed.
-   */
   if (courseError || !course) {
     return (
       <SafeAreaView style={styles.center} edges={["top", "bottom"]}>
@@ -193,6 +188,28 @@ export default function CourseDetailScreen() {
       : course.course_type === "regular"
         ? "Regular Course"
         : "Online";
+
+  const handleOpenWebsite = async () => {
+    try {
+      await Linking.openURL(WEBSITE_URL);
+    } catch (error) {
+      console.error("Unable to open website:", error);
+    }
+  };
+
+  const handleOpenWhatsApp = async () => {
+    const message = `Hello AV Art Academy, I would like more information about the "${course.course_name}" course.`;
+
+    const whatsappUrl = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(
+      message,
+    )}`;
+
+    try {
+      await Linking.openURL(whatsappUrl);
+    } catch (error) {
+      console.error("Unable to open WhatsApp:", error);
+    }
+  };
 
   return (
     <SafeAreaView style={styles.container} edges={["top", "bottom"]}>
@@ -330,6 +347,57 @@ export default function CourseDetailScreen() {
           {/* Mentor information */}
           <View style={styles.mentorSection}>
             <MentorCard />
+          </View>
+
+          {/* Additional course information */}
+          <View style={styles.courseHelpCard}>
+            <View style={styles.cardHeader}>
+              <View style={styles.helpIconBox}>
+                <Ionicons
+                  name="information-circle-outline"
+                  size={23}
+                  color="#FFFFFF"
+                />
+              </View>
+
+              <Text style={styles.heading}>Need More Information?</Text>
+            </View>
+
+            <Text style={styles.courseHelpDescription}>
+              Visit our official website for additional course information or
+              contact the AV Art Academy support team on WhatsApp.
+            </Text>
+
+            <TouchableOpacity
+              activeOpacity={0.85}
+              style={styles.websiteButton}
+              onPress={handleOpenWebsite}
+            >
+              <Ionicons name="globe-outline" size={21} color="#FFFFFF" />
+
+              <Text style={styles.actionButtonText}>
+                Visit Official Website
+              </Text>
+
+              <Ionicons name="open-outline" size={18} color="#FFFFFF" />
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              activeOpacity={0.85}
+              style={styles.whatsappButton}
+              onPress={handleOpenWhatsApp}
+            >
+              <Ionicons name="logo-whatsapp" size={22} color="#FFFFFF" />
+
+              <Text style={styles.actionButtonText}>WhatsApp Support</Text>
+
+              <Ionicons name="arrow-forward" size={18} color="#FFFFFF" />
+            </TouchableOpacity>
+
+            <Text style={styles.supportNote}>
+              These options are provided for course information and customer
+              support.
+            </Text>
           </View>
 
           {/* Continue learning */}
@@ -606,7 +674,17 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
 
+  helpIconBox: {
+    width: 42,
+    height: 42,
+    borderRadius: 15,
+    backgroundColor: "rgba(167, 139, 250, 0.32)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+
   heading: {
+    flex: 1,
     color: "#FFFFFF",
     fontSize: 21,
     fontWeight: "900",
@@ -620,6 +698,61 @@ const styles = StyleSheet.create({
 
   mentorSection: {
     marginTop: 18,
+  },
+
+  courseHelpCard: {
+    backgroundColor: "rgba(15, 23, 53, 0.95)",
+    borderRadius: 24,
+    padding: 20,
+    marginTop: 18,
+    borderWidth: 1,
+    borderColor: "rgba(167, 139, 250, 0.2)",
+  },
+
+  courseHelpDescription: {
+    color: "#CBD5E1",
+    fontSize: 14.5,
+    lineHeight: 23,
+    marginBottom: 18,
+  },
+
+  websiteButton: {
+    minHeight: 54,
+    borderRadius: 16,
+    paddingHorizontal: 16,
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+    gap: 9,
+    backgroundColor: "#7C3AED",
+    marginBottom: 12,
+  },
+
+  whatsappButton: {
+    minHeight: 54,
+    borderRadius: 16,
+    paddingHorizontal: 16,
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+    gap: 9,
+    backgroundColor: "#16A34A",
+  },
+
+  actionButtonText: {
+    flex: 1,
+    color: "#FFFFFF",
+    fontSize: 15,
+    fontWeight: "900",
+    textAlign: "center",
+  },
+
+  supportNote: {
+    color: "#94A3B8",
+    fontSize: 12,
+    lineHeight: 18,
+    textAlign: "center",
+    marginTop: 13,
   },
 
   ctaCard: {
