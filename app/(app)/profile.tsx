@@ -1,3 +1,4 @@
+import DeleteAccountSection from "@/components/account/DeleteAccountSection";
 import InformationLinksCard from "@/components/profile/InformationLinksCard";
 import TestHistoryCard from "@/components/profile/TestHistoryCard";
 import { getEnrolledCourses, getProfile } from "@/services/user.service";
@@ -69,6 +70,28 @@ export default function Profile() {
     } catch (error) {
       console.error("Logout failed:", error);
       setIsLoggingOut(false);
+    }
+  };
+
+  const handleAccountDeletionScheduled = async () => {
+    try {
+      await Promise.all([
+        SecureStore.deleteItemAsync("accessToken"),
+        SecureStore.deleteItemAsync("refreshToken"),
+      ]);
+
+      queryClient.clear();
+
+      logout();
+
+      router.replace("/");
+    } catch (error) {
+      console.error("Failed to clear auth after account deletion:", error);
+
+      // Still force the user out
+      queryClient.clear();
+      logout();
+      router.replace("/");
     }
   };
 
@@ -419,6 +442,10 @@ export default function Profile() {
         <TestHistoryCard studentId={profile.id} />
 
         <InformationLinksCard />
+
+        <DeleteAccountSection
+          onAccountScheduledForDeletion={handleAccountDeletionScheduled}
+        />
 
         {/* Logout */}
         <TouchableOpacity
